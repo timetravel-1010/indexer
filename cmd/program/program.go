@@ -36,11 +36,8 @@ type Payload struct {
 
 // Upload
 func Upload(re HttpRequest, payload *bytes.Buffer) {
-	// "http://localhost:4080/api/enron-email/_doc"
-
 	u := fmt.Sprintf("http://%s:%s/api/_bulkv2/", re.BaseURL, re.Port) //, re.Index, re.Type)
 	req, err := http.NewRequest("POST", u, payload)
-	// req, err := http.NewRequest("POST", "http://localhost:4080/api/games3/_doc", strings.NewReader(string(payload)))
 	if err != nil {
 		log.Fatal(err)
 	}
