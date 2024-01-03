@@ -6,8 +6,9 @@ import (
 )
 
 func TestParseEmptyEmail(t *testing.T) {
+	p := Parser{}
 	fileName := "../../tests/empty.txt"
-	em, err := Parse(fileName)
+	em, err := p.Parse(fileName)
 
 	if err != nil {
 		t.Fatalf("Error parsing an empty email file! %v", err)
@@ -18,9 +19,10 @@ func TestParseEmptyEmail(t *testing.T) {
 }
 
 func TestParaseFullBody(t *testing.T) {
+	p := Parser{}
 	fileName := "../../tests/email1.txt"
 	ex := "Investor, we will refund your money."
-	em, err := Parse(fileName)
+	em, err := p.Parse(fileName)
 
 	if err != nil {
 		t.Fatalf("Error parsing the file, %v", err)

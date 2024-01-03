@@ -2,13 +2,9 @@ package program
 
 import (
 	"bufio"
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -18,6 +14,7 @@ const (
 	regexName         = `^[a-zA-ZÀ-ÿ0-9 ()-]*$`
 )
 
+// An Email contains all the information of an e-mail.
 type Email struct {
 	MessageID               string   `json:"Message-ID"`
 	Date                    string   `json:"Date"`
@@ -39,16 +36,22 @@ type Email struct {
 	Body                    string   `json:"Body"`
 }
 
+// A Document contains the path of the email and the email itself.
 type Document struct {
-	Path  string `json:"path"`
+	Path  string `json:"path"` // path to the email.
 	Email *Email `json:"email"`
 }
 
-// Parse
-func Parse(fileName string) (*Email, error) {
+// A Parser
+type Parser struct {
+}
+
+// Parse parses the txt email file into the Email structure.
+// If there is an error, it will be of type *PathError.
+func (p *Parser) Parse(filePath string) (*Email, error) {
 	em := Email{}
 
-	file, err := os.Open(fileName)
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +59,6 @@ func Parse(fileName string) (*Email, error) {
 
 	scanner := bufio.NewScanner(file)
 	currentField := ""
-
 	isEmpty := true
 
 	for scanner.Scan() {
@@ -116,78 +118,34 @@ func Parse(fileName string) (*Email, error) {
 		} else if currentField == "To" {
 			em.To = append(em.To, parseAddresses(subStrings[0])...)
 		}
+		if em.MessageID == "" {
+			log.Printf("The file %s is not an email, skipped.\n", filePath)
+			break
+		}
 	}
 	if isEmpty {
-		fmt.Println("The file is empty.")
+		fmt.Printf("The file %s is empty.", filePath)
 		return nil, nil
 	}
 	return &em, nil
 }
 
-
-// Index
-func Index(dir string, re HttpRequest) {
-	var counter int = 0
-	buf := &bytes.Buffer{}
-	encoder := json.NewEncoder(buf)
-	emails := []Document{}
-
-	log.Println("Indexing documents...")
-	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
-		if !info.IsDir() {
-			em, err := Parse(path)
-			if err != nil {
-				return err
-			}
-			emails = append(emails, Document{Path: path, Email: em})
-			counter++
-			if counter == 100 {
-				encoder.Encode(Payload{Index: re.Index, DocumentData: emails})
-				Upload(re, buf)
-				buf.Reset()
-				counter = 0
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		panic("Error while opening the files!")
-	}
-	if counter > 0 {
-		encoder.Encode(Payload{Index: re.Index, DocumentData: emails})
-		Upload(re, buf)
-	}
-	log.Println("Indexing completed successfully completed.")
-}
-
+// parseAddresses
 func parseAddresses(s string) []string {
 	return GetStringsByRegexp(s, regexEmailAddress)
 }
 
+// parseNames
 func parseNames(s string) []string {
 	return GetStringsByRegexp(s, regexName)
 }
 
+// GetStringsByRegexp
 func GetStringsByRegexp(s string, regex string) []string {
 	return regexp.MustCompile(regex).FindAllString(s, -1)
 }
 
-func print(s []string) {
-	fmt.Print("[")
-	for _, v := range s {
-		if v == "\n" {
-			fmt.Print("newline, ")
-		} else if v == "" {
-			fmt.Print("nil, ")
-		} else if v == " " {
-			fmt.Print("empty, ")
-		} else {
-			fmt.Print(v, ", ")
-		}
-	}
-	fmt.Println("]")
-}
-
+// MapStrings
 func MapStrings(arr []string, f func(string) string) []string {
 	newArr := make([]string, len(arr))
 	for i, s := range arr {

@@ -6,7 +6,12 @@ import (
 	"github.com/timetravel-1010/zemail-indexer/cmd/program"
 )
 
-var flags = Flags{}
+var (
+	flags   = Flags{}
+	indexer = program.Indexer{
+		Parser: program.Parser{},
+	}
+)
 
 type Flags struct {
 	directory *string
@@ -29,7 +34,7 @@ func Execute() {
 		Type:    *flags._type,
 		Port:    *flags.port,
 	}
-	program.Index(*flags.directory, re)
+	indexer.Index(*flags.directory, re)
 }
 
 func init() {
