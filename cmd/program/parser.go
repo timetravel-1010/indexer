@@ -7,6 +7,31 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/timetravel-1010/zemail-indexer/cmd/util"
+)
+
+var (
+	fields = []string{
+		"Message-ID",
+		"Date",
+		"From",
+		"To",
+		"Cc",
+		"Bcc",
+		"Subject",
+		"Mime-Version",
+		"Content-Type",
+		"Content-Transfer-Encoding",
+		"X-From",
+		"X-To",
+		"X-cc",
+		"X-bcc",
+		"X-Folder",
+		"X-Origin",
+		"X-FileName",
+		"Body",
+	}
 )
 
 const (
@@ -50,7 +75,6 @@ type Parser struct {
 // If there is an error, it will be of type *PathError.
 func (p *Parser) Parse(filePath string) (*Email, error) {
 	em := Email{}
-
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -59,67 +83,13 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 
 	scanner := bufio.NewScanner(file)
 	currentField := ""
+	inBody := false
 	isEmpty := true
 
 	for scanner.Scan() {
 		isEmpty = false
 		line := scanner.Text()
-		subStrings := strings.SplitN(line, ":", 2)
-		if len(subStrings) == 2 && currentField != "X-FileName" {
-			currentField = subStrings[0]
-			l := strings.TrimSpace(subStrings[1])
-			switch currentField {
-			case "Message-ID":
-				em.MessageID = l
-			case "Date":
-				em.Date = l
-			case "From":
-				em.From = l
-			case "To":
-				em.To = append(em.To, parseNames(l)...)
-			case "Cc":
-				em.CC = parseAddresses(l)
-				em.CC = append(em.CC, parseNames(l)...)
-			case "Bcc":
-				em.BCC = parseAddresses(l)
-				em.BCC = append(em.BCC, parseNames(l)...)
-			case "Subject":
-				em.Subject = l
-			case "Mime-Version":
-				em.MimeVersion = l
-			case "Content-Type":
-				em.ContentType = l
-			case "Content-Transfer-Encoding":
-				em.ContentTransferEncoding = l
-			case "X-From":
-				em.XFrom = l
-			case "X-To":
-				em.XTo = MapStrings(strings.Split(l, ","), strings.TrimSpace)
-			case "X-cc":
-				em.Xcc = parseAddresses(l)
-				em.Xcc = append(em.Xcc, parseNames(l)...)
-			case "X-bcc":
-				em.Xbcc = parseAddresses(l)
-				em.Xbcc = append(em.Xbcc, parseNames(l)...)
-			case "X-Folder":
-				em.XFolder = l
-			case "X-Origin":
-				em.XOrigin = l
-			case "X-FileName":
-				em.XFileName = l
-			default:
-				fmt.Println("No match found and currentLine=", currentField)
-			}
-		} else if currentField == "X-FileName" { // Body content
-			em.Body += "\n"
-			if subStrings != nil {
-				em.Body += subStrings[0]
-			}
-		} else if currentField == "To" {
-			em.To = append(em.To, parseAddresses(subStrings[0])...)
-		}
-		if em.MessageID == "" {
-			log.Printf("The file %s is not an email, skipped.\n", filePath)
+		if isValid := saveLine(&em, line, &currentField, filePath, inBody); !isValid {
 			break
 		}
 	}
@@ -152,4 +122,118 @@ func MapStrings(arr []string, f func(string) string) []string {
 		newArr[i] = f(s)
 	}
 	return newArr
+}
+
+func saveLine(em *Email, line string, currentField *string, filePath string, inBody bool) bool {
+	if inBody {
+		em.Body += "\n" + line
+		return true
+	}
+	subStrings := strings.SplitN(line, ":", 2)
+	first := subStrings[0]
+
+	if idx := util.IndexOf(first, fields); idx == -1 { // Continues in a section.
+		addLine(strings.TrimSpace(subStrings[0]), *currentField, em)
+	} else if len(subStrings) == 2 && !inBody {
+		*currentField = subStrings[0]
+		line := strings.TrimSpace(subStrings[1])
+		setValue(*currentField, line, em)
+	}
+	if em.MessageID == "" {
+		log.Printf("The file %s is not an email, skipped.\n", filePath)
+		return false
+	}
+	return true
+}
+
+func setValue(currentField, l string, em *Email) {
+	switch currentField {
+	case "Message-ID":
+		em.MessageID = l
+	case "Date":
+		em.Date = l
+	case "From":
+		em.From = l
+	case "To":
+		em.To = parseAddresses(l)
+		em.To = append(em.To, parseNames(l)...)
+	case "Cc":
+		em.CC = parseAddresses(l)
+		em.CC = append(em.CC, parseNames(l)...)
+	case "Bcc":
+		em.BCC = parseAddresses(l)
+		em.BCC = append(em.BCC, parseNames(l)...)
+	case "Subject":
+		em.Subject = l
+	case "Mime-Version":
+		em.MimeVersion = l
+	case "Content-Type":
+		em.ContentType = l
+	case "Content-Transfer-Encoding":
+		em.ContentTransferEncoding = l
+	case "X-From":
+		em.XFrom = l
+	case "X-To":
+		em.XTo = MapStrings(strings.Split(l, ","), strings.TrimSpace)
+	case "X-cc":
+		em.Xcc = parseAddresses(l)
+		em.Xcc = append(em.Xcc, parseNames(l)...)
+	case "X-bcc":
+		em.Xbcc = parseAddresses(l)
+		em.Xbcc = append(em.Xbcc, parseNames(l)...)
+	case "X-Folder":
+		em.XFolder = l
+	case "X-Origin":
+		em.XOrigin = l
+	case "X-FileName":
+		em.XFileName = l
+	default:
+		fmt.Println("No match found and currentLine =", currentField)
+	}
+}
+
+func addLine(l, currentField string, em *Email) {
+	switch currentField {
+	case "Message-ID":
+		em.MessageID += l
+	case "Date":
+		em.Date += l
+	case "From":
+		em.From += l
+	case "To":
+		em.To = append(em.To, parseAddresses(l)...)
+		em.To = append(em.To, parseNames(l)...)
+	case "Cc":
+		em.CC = parseAddresses(l)
+		em.CC = append(em.CC, parseNames(l)...)
+	case "Bcc":
+		em.BCC = parseAddresses(l)
+		em.BCC = append(em.BCC, parseNames(l)...)
+	case "Subject":
+		em.Subject += l
+	case "Mime-Version":
+		em.MimeVersion += l
+	case "Content-Type":
+		em.ContentType += l
+	case "Content-Transfer-Encoding":
+		em.ContentTransferEncoding += l
+	case "X-From":
+		em.XFrom += l
+	case "X-To":
+		em.XTo = append(em.XTo, MapStrings(strings.Split(l, ","), strings.TrimSpace)...)
+	case "X-cc":
+		em.Xcc = parseAddresses(l)
+		em.Xcc = append(em.Xcc, parseNames(l)...)
+	case "X-bcc":
+		em.Xbcc = parseAddresses(l)
+		em.Xbcc = append(em.Xbcc, parseNames(l)...)
+	case "X-Folder":
+		em.XFolder += l
+	case "X-Origin":
+		em.XOrigin += l
+	case "X-FileName":
+		em.XFileName += l
+	default:
+		fmt.Println("No match found and currentLine =", currentField)
+	}
 }
