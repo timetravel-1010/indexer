@@ -1,3 +1,59 @@
 # Indexer
 
 CLI tool to index emails in txt format (see example below) in the search engine [ZincSearch](https://zincsearch-docs.zinc.dev).
+
+
+## Email Format
+
+An txt email has the following structure:
+
+```txt
+Message-ID: ...
+Date: ...
+From: ...
+To: ...
+Subject: ...
+Mime-Version: ...
+Content-Type: ...
+Content-Transfer-Encoding: ...
+X-From: ...
+X-To: ...
+X-cc: ...
+X-bcc: ...
+X-Folder: ...
+X-Origin: ...
+X-FileName: ...
+...
+...
+...
+```
+
+It is assumed that the entire content of the email after the "X-FileName" field is the body of the email. Examples of emails can be found in the [samples](https://github.com/timetravel-1010/indexer/tree/main/samples) folder.
+
+
+### Data Structure
+
+The structure and corresponding json fields used to parse an email are shown below. An email can contain at most, but not necessarily, the fields described below:
+
+```go
+type Email struct {
+	MessageID               string   `json:"Message-ID"`
+	Date                    string   `json:"Date"`
+	From                    string   `json:"From"`
+	To                      []string `json:"To"`
+	CC                      []string `json:"CC"`
+	BCC                     []string `json:"BCC"`
+	Subject                 string   `json:"Subject"`
+	MimeVersion             string   `json:"Mime-Version"`
+	ContentType             string   `json:"Content-Type"`
+	ContentTransferEncoding string   `json:"Content-Transfer-Encoding"`
+	XFrom                   string   `json:"X-From"`
+	XTo                     []string `json:"X-To"`
+	Xcc                     []string `json:"X-cc"`
+	Xbcc                    []string `json:"X-bcc"`
+	XFolder                 string   `json:"X-Folder"`
+	XOrigin                 string   `json:"X-Origin"`
+	XFileName               string   `json:"X-FileName"`
+	Body                    string   `json:"Body"`
+}
+```
