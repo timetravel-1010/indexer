@@ -3,7 +3,7 @@ package cmd
 import (
 	"flag"
 
-	"github.com/timetravel-1010/zemail-indexer/cmd/program"
+	"github.com/timetravel-1010/indexer/cmd/program"
 )
 
 var (

@@ -28,6 +28,9 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 			if err != nil {
 				return err
 			}
+			if em == nil { // Is Empty
+				return nil
+			}
 			emails = append(emails, Document{Path: path, Email: em})
 			counter++
 			if counter == 100 {
