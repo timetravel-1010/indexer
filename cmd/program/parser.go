@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/timetravel-1010/zemail-indexer/cmd/util"
+	"github.com/timetravel-1010/indexer/cmd/util"
 )
 
 var (

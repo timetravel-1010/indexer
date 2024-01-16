@@ -56,5 +56,5 @@ func Upload(re HttpRequest, payload *bytes.Buffer) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Default().Println(string(body))
+	log.Println(string(body))
 }
