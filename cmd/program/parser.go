@@ -89,12 +89,12 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 	for scanner.Scan() {
 		isEmpty = false
 		line := scanner.Text()
-		if isValid := saveLine(&em, line, &currentField, filePath, inBody); !isValid {
+		if isValid := saveLine(&em, line, &currentField, filePath, &inBody); !isValid {
 			break
 		}
 	}
 	if isEmpty {
-		fmt.Printf("The file %s is empty.", filePath)
+		fmt.Printf("The file %s is empty.\n", filePath)
 		return nil, nil
 	}
 	return &em, nil
@@ -124,25 +124,27 @@ func MapStrings(arr []string, f func(string) string) []string {
 	return newArr
 }
 
-func saveLine(em *Email, line string, currentField *string, filePath string, inBody bool) bool {
-	if inBody {
-		em.Body += "\n" + line
+func saveLine(em *Email, line string, currentField *string, filePath string, inBody *bool) bool {
+	if *inBody {
+		em.Body += fmt.Sprintf("\n%s", line)
 		return true
 	}
 	subStrings := strings.SplitN(line, ":", 2)
 	first := subStrings[0]
 
-	if idx := util.IndexOf(first, fields); idx == -1 { // Continues in a section.
-		addLine(strings.TrimSpace(subStrings[0]), *currentField, em)
-	} else if len(subStrings) == 2 && !inBody {
+	if len(subStrings) == 2 {
 		*currentField = subStrings[0]
 		line := strings.TrimSpace(subStrings[1])
 		setValue(*currentField, line, em)
+	} else if idx := util.IndexOf(first, fields); idx == -1 { // Continues in a section.
+		addLine(strings.TrimSpace(subStrings[0]), *currentField, em)
 	}
 	if em.MessageID == "" {
 		log.Printf("The file %s is not an email, skipped.\n", filePath)
 		return false
 	}
+
+	*inBody = *currentField == "X-FileName"
 	return true
 }
 
