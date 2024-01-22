@@ -41,24 +41,24 @@ const (
 
 // An Email contains all the information of an e-mail.
 type Email struct {
-	MessageID               string   `json:"Message-ID"`
-	Date                    string   `json:"Date"`
-	From                    string   `json:"From"`
-	To                      []string `json:"To"`
-	CC                      []string `json:"CC"`
-	BCC                     []string `json:"BCC"`
-	Subject                 string   `json:"Subject"`
-	MimeVersion             string   `json:"Mime-Version"`
-	ContentType             string   `json:"Content-Type"`
-	ContentTransferEncoding string   `json:"Content-Transfer-Encoding"`
-	XFrom                   string   `json:"X-From"`
-	XTo                     []string `json:"X-To"`
-	Xcc                     []string `json:"X-cc"`
-	Xbcc                    []string `json:"X-bcc"`
-	XFolder                 string   `json:"X-Folder"`
-	XOrigin                 string   `json:"X-Origin"`
-	XFileName               string   `json:"X-FileName"`
-	Body                    string   `json:"Body"`
+	MessageID               string   `json:"messageId"`
+	Date                    string   `json:"date"`
+	From                    string   `json:"from"`
+	To                      []string `json:"to"`
+	CC                      []string `json:"cc"`
+	BCC                     []string `json:"bcc"`
+	Subject                 string   `json:"subject"`
+	MimeVersion             string   `json:"mimeVersion"`
+	ContentType             string   `json:"contentType"`
+	ContentTransferEncoding string   `json:"contentTransferEncoding"`
+	XFrom                   string   `json:"xFrom"`
+	XTo                     []string `json:"xTo"`
+	Xcc                     []string `json:"xcc"`
+	Xbcc                    []string `json:"xbcc"`
+	XFolder                 string   `json:"xFolder"`
+	XOrigin                 string   `json:"xOrigin"`
+	XFileName               string   `json:"xFileName"`
+	Body                    string   `json:"body"`
 }
 
 // A Document contains the path of the email and the email itself.
