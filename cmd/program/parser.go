@@ -41,24 +41,24 @@ const (
 
 // An Email contains all the information of an e-mail.
 type Email struct {
-	MessageID               string   `json:"Message-ID"`
-	Date                    string   `json:"Date"`
-	From                    string   `json:"From"`
-	To                      []string `json:"To"`
-	CC                      []string `json:"CC"`
-	BCC                     []string `json:"BCC"`
-	Subject                 string   `json:"Subject"`
-	MimeVersion             string   `json:"Mime-Version"`
-	ContentType             string   `json:"Content-Type"`
-	ContentTransferEncoding string   `json:"Content-Transfer-Encoding"`
-	XFrom                   string   `json:"X-From"`
-	XTo                     []string `json:"X-To"`
-	Xcc                     []string `json:"X-cc"`
-	Xbcc                    []string `json:"X-bcc"`
-	XFolder                 string   `json:"X-Folder"`
-	XOrigin                 string   `json:"X-Origin"`
-	XFileName               string   `json:"X-FileName"`
-	Body                    string   `json:"Body"`
+	MessageID               string   `json:"messageId"`
+	Date                    string   `json:"date"`
+	From                    string   `json:"from"`
+	To                      []string `json:"to"`
+	CC                      []string `json:"cc"`
+	BCC                     []string `json:"bcc"`
+	Subject                 string   `json:"subject"`
+	MimeVersion             string   `json:"mimeVersion"`
+	ContentType             string   `json:"contentType"`
+	ContentTransferEncoding string   `json:"contentTransferEncoding"`
+	XFrom                   string   `json:"xFrom"`
+	XTo                     []string `json:"xTo"`
+	Xcc                     []string `json:"xcc"`
+	Xbcc                    []string `json:"xbcc"`
+	XFolder                 string   `json:"xFolder"`
+	XOrigin                 string   `json:"xOrigin"`
+	XFileName               string   `json:"xFileName"`
+	Body                    string   `json:"body"`
 }
 
 // A Document contains the path of the email and the email itself.
@@ -89,12 +89,12 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 	for scanner.Scan() {
 		isEmpty = false
 		line := scanner.Text()
-		if isValid := saveLine(&em, line, &currentField, filePath, inBody); !isValid {
+		if isValid := saveLine(&em, line, &currentField, filePath, &inBody); !isValid {
 			break
 		}
 	}
 	if isEmpty {
-		fmt.Printf("The file %s is empty.", filePath)
+		fmt.Printf("The file %s is empty.\n", filePath)
 		return nil, nil
 	}
 	return &em, nil
@@ -124,25 +124,27 @@ func MapStrings(arr []string, f func(string) string) []string {
 	return newArr
 }
 
-func saveLine(em *Email, line string, currentField *string, filePath string, inBody bool) bool {
-	if inBody {
-		em.Body += "\n" + line
+func saveLine(em *Email, line string, currentField *string, filePath string, inBody *bool) bool {
+	if *inBody {
+		em.Body += fmt.Sprintf("\n%s", line)
 		return true
 	}
 	subStrings := strings.SplitN(line, ":", 2)
 	first := subStrings[0]
 
-	if idx := util.IndexOf(first, fields); idx == -1 { // Continues in a section.
-		addLine(strings.TrimSpace(subStrings[0]), *currentField, em)
-	} else if len(subStrings) == 2 && !inBody {
+	if len(subStrings) == 2 {
 		*currentField = subStrings[0]
 		line := strings.TrimSpace(subStrings[1])
 		setValue(*currentField, line, em)
+	} else if idx := util.IndexOf(first, fields); idx == -1 { // Continues in a section.
+		addLine(strings.TrimSpace(subStrings[0]), *currentField, em)
 	}
 	if em.MessageID == "" {
 		log.Printf("The file %s is not an email, skipped.\n", filePath)
 		return false
 	}
+
+	*inBody = *currentField == "X-FileName"
 	return true
 }
 
