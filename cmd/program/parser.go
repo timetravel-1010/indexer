@@ -132,13 +132,14 @@ func saveLine(em *Email, line string, currentField *string, filePath string, inB
 	subStrings := strings.SplitN(line, ":", 2)
 	first := subStrings[0]
 
-	if len(subStrings) == 2 {
+	if idx := util.IndexOf(first, fields); idx == -1 { // Continues in a section.
+		addLine(line, *currentField, em, filePath)
+	} else if len(subStrings) == 2 {
 		*currentField = subStrings[0]
 		line := strings.TrimSpace(subStrings[1])
-		setValue(*currentField, line, em)
-	} else if idx := util.IndexOf(first, fields); idx == -1 { // Continues in a section.
-		addLine(strings.TrimSpace(subStrings[0]), *currentField, em)
+		setValue(*currentField, line, em, filePath)
 	}
+	// TODO: Move this validation to do it just once.
 	if em.MessageID == "" {
 		log.Printf("The file %s is not an email, skipped.\n", filePath)
 		return false
@@ -148,7 +149,7 @@ func saveLine(em *Email, line string, currentField *string, filePath string, inB
 	return true
 }
 
-func setValue(currentField, l string, em *Email) {
+func setValue(currentField, l string, em *Email, filePath string) {
 	switch currentField {
 	case "Message-ID":
 		em.MessageID = l
@@ -190,11 +191,17 @@ func setValue(currentField, l string, em *Email) {
 	case "X-FileName":
 		em.XFileName = l
 	default:
-		fmt.Println("No match found and currentLine =", currentField)
+		fmt.Println(fmt.Sprintf(`
+        ===================ERROR NO MATCH FOUND
+        function: setValue
+        l: %s
+        currentLine: %s
+        file: %s
+        ===================END ERROR`, l, currentField, filePath))
 	}
 }
 
-func addLine(l, currentField string, em *Email) {
+func addLine(l, currentField string, em *Email, filePath string) {
 	switch currentField {
 	case "Message-ID":
 		em.MessageID += l
@@ -212,7 +219,7 @@ func addLine(l, currentField string, em *Email) {
 		em.BCC = parseAddresses(l)
 		em.BCC = append(em.BCC, parseNames(l)...)
 	case "Subject":
-		em.Subject += l
+		em.Subject += "\n" + l
 	case "Mime-Version":
 		em.MimeVersion += l
 	case "Content-Type":
@@ -236,6 +243,6 @@ func addLine(l, currentField string, em *Email) {
 	case "X-FileName":
 		em.XFileName += l
 	default:
-		fmt.Println("No match found and currentLine =", currentField)
+		fmt.Println("addLine: No match found and currentLine =", currentField, "file:", filePath)
 	}
 }
