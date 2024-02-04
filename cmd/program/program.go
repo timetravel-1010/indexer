@@ -19,7 +19,7 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 	var counter int = 0
 	buf := &bytes.Buffer{}
 	encoder := json.NewEncoder(buf)
-	emails := []Document{}
+	//emails := []Document{}
 
 	log.Println("Indexing documents...")
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
@@ -31,10 +31,27 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 			if em == nil { // Is Empty
 				return nil
 			}
-			emails = append(emails, Document{Path: path, Email: em})
+			//emails = append(emails, Document{Path: path, Email: em})
+
+			ia := IndexAction{
+				Index: IndexDocument{
+					Index: re.Index,
+				},
+			}
+			encoder.Encode(ia)
+			encoder.Encode(Document{
+				Path:  path,
+				Email: em,
+			})
 			counter++
 			if counter == 100 {
-				encoder.Encode(Payload{Index: re.Index, DocumentData: emails})
+				//postBody, _ := json.Marshal(Payload{
+				//	Index:        re.Index,
+				//	DocumentData: emails,
+				//})
+				//buf := bytes.NewBuffer(postBody)
+				//buf := &bytes.Buffer{}
+				//json.NewEncoder(buf).Encode(Payload{Index: re.Index, DocumentData: emails})
 				Upload(re, buf)
 				buf.Reset()
 				counter = 0
@@ -46,7 +63,15 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 		panic("Error while opening the files!")
 	}
 	if counter > 0 {
-		encoder.Encode(Payload{Index: re.Index, DocumentData: emails})
+		//json.NewEncoder().Encode(Payload{Index: re.Index, DocumentData: emails})
+		//postBody, _ := json.Marshal(Payload{
+		//	Index:        re.Index,
+		//DocumentData: emails,
+		//})
+
+		//buf := bytes.NewBuffer()
+		//buf := &bytes.Buffer{}
+		//json.NewEncoder(buf).Encode(Payload{Index: re.Index, DocumentData: emails})
 		Upload(re, buf)
 	}
 	log.Println("Indexing completed successfully completed.")
