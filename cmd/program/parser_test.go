@@ -1,7 +1,6 @@
 package program
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -126,14 +125,27 @@ Are there behind closed doors discussions being held prior to the meeting?  Is t
 
 func testEq(a, b []string) bool {
 	if len(a) != len(b) {
-		fmt.Println("this")
 		return false
 	}
 	for i := range a {
 		if a[i] != b[i] {
-			fmt.Println(a[i], "!=", b[i])
 			return false
 		}
 	}
 	return true
+}
+
+func TestSubject(t *testing.T) {
+	p := Parser{}
+	fileName := "../../samples/17.txt"
+	expectedSubject := `Hewlett Packard Conference call on Wireless and Handheld
+ Technologies, December 14th, 1:30-2:30 PM`
+	em, err := p.Parse(fileName)
+	if err != nil {
+		t.Fatalf("Error parsing the file, %v", err)
+	}
+
+	if strings.Compare(em.Subject, expectedSubject) != 0 {
+		t.Fatalf("got %q, expected %q", em.Subject, expectedSubject)
+	}
 }
