@@ -5,16 +5,15 @@ import (
 	"testing"
 )
 
-func TestParseEmptyEmail(t *testing.T) {
-	p := Parser{}
+func TestCheckEmptyEmail(t *testing.T) {
 	fileName := "../../samples/empty.txt"
-	em, err := p.Parse(fileName)
+	isEmpty, err := CheckEmpty(fileName)
 
 	if err != nil {
 		t.Fatalf("Error parsing an empty email file! %v", err)
 	}
-	if em != nil {
-		t.Fatalf("got %q, expected nil", em)
+	if !isEmpty {
+		t.Fatalf("got %v, expected true", isEmpty)
 	}
 }
 
@@ -147,5 +146,17 @@ func TestSubject(t *testing.T) {
 
 	if strings.Compare(em.Subject, expectedSubject) != 0 {
 		t.Fatalf("got %q, expected %q", em.Subject, expectedSubject)
+	}
+}
+
+func TestLargeEmail(t *testing.T) {
+	p := Parser{}
+	fileName := "../../samples/big-email.txt"
+	em, err := p.Parse(fileName)
+	if err != nil {
+		t.Fatalf("Error parsing the file, %v", err)
+	}
+	if em == nil {
+		t.Fatalf("Error parsing the email.")
 	}
 }
