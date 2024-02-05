@@ -75,6 +75,7 @@ type Parser struct {
 // If there is an error, it will be of type *PathError.
 func (p *Parser) Parse(filePath string) (*Email, error) {
 	em := Email{}
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
@@ -84,20 +85,23 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 	scanner := bufio.NewScanner(file)
 	currentField := ""
 	inBody := false
-	isEmpty := true
 
 	for scanner.Scan() {
-		isEmpty = false
 		line := scanner.Text()
 		if isValid := saveLine(&em, line, &currentField, filePath, &inBody); !isValid {
 			break
 		}
 	}
-	if isEmpty {
-		fmt.Printf("The file %s is empty.\n", filePath)
-		return nil, nil
-	}
 	return &em, nil
+}
+
+func CheckEmpty(filePath string) (bool, error) {
+	fi, err := os.Stat(filePath)
+	if err != nil {
+		return true, err
+	}
+
+	return (fi.Size() == 0), nil
 }
 
 // parseAddresses
