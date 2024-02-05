@@ -3,6 +3,8 @@ package program
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/fs"
 	"log"
 	"path/filepath"
@@ -24,6 +26,14 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 	log.Println("Indexing documents...")
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
+
+			if isEmpty, err := CheckEmpty(path); isEmpty && err == nil {
+				fmt.Printf("The file %s is empty.\n", path)
+				return nil
+			} else if err != nil {
+				return errors.New(fmt.Sprintf("error checking empty file: %s", err.Error()))
+			}
+
 			em, err := in.Parser.Parse(path)
 			if err != nil {
 				return err
@@ -33,12 +43,12 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 			}
 			//emails = append(emails, Document{Path: path, Email: em})
 
-			ia := IndexAction{
+			encoder.Encode(IndexAction{
 				Index: IndexDocument{
 					Index: re.Index,
 				},
-			}
-			encoder.Encode(ia)
+			})
+
 			encoder.Encode(Document{
 				Path:  path,
 				Email: em,
@@ -53,7 +63,6 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 				//buf := &bytes.Buffer{}
 				//json.NewEncoder(buf).Encode(Payload{Index: re.Index, DocumentData: emails})
 				Upload(re, buf)
-				buf.Reset()
 				counter = 0
 			}
 		}
