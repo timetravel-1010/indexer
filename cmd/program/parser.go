@@ -3,7 +3,6 @@ package program
 import (
 	"bufio"
 	"fmt"
-	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -61,6 +60,50 @@ type Email struct {
 	Body                    string   `json:"body"`
 }
 
+type EmailBuilder struct {
+	MessageID               strings.Builder
+	Date                    strings.Builder
+	From                    strings.Builder
+	To                      []string
+	CC                      []string
+	BCC                     []string
+	Subject                 strings.Builder
+	MimeVersion             strings.Builder
+	ContentType             strings.Builder
+	ContentTransferEncoding strings.Builder
+	XFrom                   strings.Builder
+	XTo                     []string
+	Xcc                     []string
+	Xbcc                    []string
+	XFolder                 strings.Builder
+	XOrigin                 strings.Builder
+	XFileName               strings.Builder
+	Body                    strings.Builder
+}
+
+func (eb *EmailBuilder) build() *Email {
+	return &Email{
+		MessageID:               eb.MessageID.String(),
+		Date:                    eb.Date.String(),
+		From:                    eb.From.String(),
+		To:                      eb.To,
+		CC:                      eb.CC,
+		BCC:                     eb.BCC,
+		Subject:                 eb.Subject.String(),
+		MimeVersion:             eb.MimeVersion.String(),
+		ContentType:             eb.ContentType.String(),
+		ContentTransferEncoding: eb.ContentTransferEncoding.String(),
+		XFrom:                   eb.XFrom.String(),
+		XTo:                     eb.XTo,
+		Xcc:                     eb.Xcc,
+		Xbcc:                    eb.Xbcc,
+		XFolder:                 eb.XFolder.String(),
+		XOrigin:                 eb.XOrigin.String(),
+		XFileName:               eb.XFileName.String(),
+		Body:                    eb.Body.String(),
+	}
+}
+
 // A Document contains the path of the email and the email itself.
 type Document struct {
 	Path  string `json:"path"` // path to the email.
@@ -74,7 +117,8 @@ type Parser struct {
 // Parse parses the txt email file into the Email structure.
 // If there is an error, it will be of type *PathError.
 func (p *Parser) Parse(filePath string) (*Email, error) {
-	em := Email{}
+	//em := Email{}
+	var eb EmailBuilder = EmailBuilder{}
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -88,11 +132,12 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		if isValid := saveLine(&em, line, &currentField, filePath, &inBody); !isValid {
+		if isValid := saveLine(&eb, &line, &currentField, filePath, &inBody); !isValid {
 			break
 		}
 	}
-	return &em, nil
+	em := eb.build()
+	return em, nil
 }
 
 func CheckEmpty(filePath string) (bool, error) {
@@ -128,72 +173,75 @@ func MapStrings(arr []string, f func(string) string) []string {
 	return newArr
 }
 
-func saveLine(em *Email, line string, currentField *string, filePath string, inBody *bool) bool {
+func saveLine(em *EmailBuilder, line *string, currentField *string, filePath string, inBody *bool) bool {
 	if *inBody {
-		em.Body += fmt.Sprintf("\n%s", line)
+		em.Body.WriteString(*line)
+		em.Body.WriteString("\n")
 		return true
 	}
-	subStrings := strings.SplitN(line, ":", 2)
+	subStrings := strings.SplitN(*line, ":", 2)
 	first := subStrings[0]
 
 	if idx := util.IndexOf(first, fields); idx == -1 { // Continues in a section.
-		addLine(line, *currentField, em, filePath)
+		//addLine(*line, *currentField, em, filePath)
+		setValue(*currentField, line, em, filePath)
 	} else if len(subStrings) == 2 {
 		*currentField = subStrings[0]
 		line := strings.TrimSpace(subStrings[1])
-		setValue(*currentField, line, em, filePath)
+		setValue(*currentField, &line, em, filePath)
 	}
 	// TODO: Move this validation to do it just once.
-	if em.MessageID == "" {
-		log.Printf("The file %s is not an email, skipped.\n", filePath)
-		return false
-	}
+	//if em.MessageID.String() == "" {
+	//	log.Printf("The file %s is not an email, skipped.\n", filePath)
+	//	return false
+	//}
 
 	*inBody = *currentField == "X-FileName"
 	return true
 }
 
-func setValue(currentField, l string, em *Email, filePath string) {
+func setValue(currentField string, l *string, em *EmailBuilder, filePath string) {
 	switch currentField {
 	case "Message-ID":
-		em.MessageID = l
+		em.MessageID.WriteString(*l)
+		em.MessageID.WriteString("\n")
 	case "Date":
-		em.Date = l
+		em.Date.WriteString(*l)
 	case "From":
-		em.From = l
+		em.From.WriteString(*l)
 	case "To":
-		em.To = parseAddresses(l)
-		em.To = append(em.To, parseNames(l)...)
+		em.To = parseAddresses(*l)
+		em.To = append(em.To, parseNames(*l)...)
 	case "Cc":
-		em.CC = parseAddresses(l)
-		em.CC = append(em.CC, parseNames(l)...)
+		em.CC = parseAddresses(*l)
+		em.CC = append(em.CC, parseNames(*l)...)
 	case "Bcc":
-		em.BCC = parseAddresses(l)
-		em.BCC = append(em.BCC, parseNames(l)...)
+		em.BCC = parseAddresses(*l)
+		em.BCC = append(em.BCC, parseNames(*l)...)
 	case "Subject":
-		em.Subject = l
+		em.Subject.WriteString(*l)
 	case "Mime-Version":
-		em.MimeVersion = l
+		em.MimeVersion.WriteString(*l)
 	case "Content-Type":
-		em.ContentType = l
+		em.ContentType.WriteString(*l)
 	case "Content-Transfer-Encoding":
-		em.ContentTransferEncoding = l
+		em.ContentTransferEncoding.WriteString(*l)
 	case "X-From":
-		em.XFrom = l
+		em.XFrom.WriteString(*l)
 	case "X-To":
-		em.XTo = MapStrings(strings.Split(l, ","), strings.TrimSpace)
+		em.XTo = MapStrings(strings.Split(*l, ","), strings.TrimSpace)
 	case "X-cc":
-		em.Xcc = parseAddresses(l)
-		em.Xcc = append(em.Xcc, parseNames(l)...)
+		em.Xcc = parseAddresses(*l)
+		em.Xcc = append(em.Xcc, parseNames(*l)...)
 	case "X-bcc":
-		em.Xbcc = parseAddresses(l)
-		em.Xbcc = append(em.Xbcc, parseNames(l)...)
+		em.Xbcc = parseAddresses(*l)
+		em.Xbcc = append(em.Xbcc, parseNames(*l)...)
 	case "X-Folder":
-		em.XFolder = l
+		em.XFolder.WriteString(*l)
 	case "X-Origin":
-		em.XOrigin = l
+		em.XOrigin.WriteString(*l)
 	case "X-FileName":
-		em.XFileName = l
+		em.XFileName.WriteString(*l)
 	default:
 		fmt.Println(fmt.Sprintf(`
         ===================ERROR NO MATCH FOUND
@@ -201,11 +249,12 @@ func setValue(currentField, l string, em *Email, filePath string) {
         l: %s
         currentLine: %s
         file: %s
-        ===================END ERROR`, l, currentField, filePath))
+        ===================END ERROR`, *l, currentField, filePath))
 	}
 }
 
-func addLine(l, currentField string, em *Email, filePath string) {
+func addLine(l string, currentField string, em *Email, filePath string) {
+
 	switch currentField {
 	case "Message-ID":
 		em.MessageID += l
