@@ -1,3 +1,4 @@
+indexer
 # Created by https://www.toptal.com/developers/gitignore/api/go,visualstudiocode,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=go,visualstudiocode,linux
 
@@ -11,7 +12,6 @@
 *.dll
 *.so
 *.dylib
-*.txt
 # Test binary, built with `go test -c`
 *.test
 

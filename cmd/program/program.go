@@ -62,7 +62,9 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 				//buf := bytes.NewBuffer(postBody)
 				//buf := &bytes.Buffer{}
 				//json.NewEncoder(buf).Encode(Payload{Index: re.Index, DocumentData: emails})
-				Upload(re, buf)
+				if err := Upload(re, buf); err != nil {
+					return err
+				}
 				counter = 0
 			}
 		}
@@ -81,7 +83,10 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 		//buf := bytes.NewBuffer()
 		//buf := &bytes.Buffer{}
 		//json.NewEncoder(buf).Encode(Payload{Index: re.Index, DocumentData: emails})
-		Upload(re, buf)
+		if err := Upload(re, buf); err != nil {
+			log.Printf("error uploading the files: %v", err)
+		}
+
 	}
-	log.Println("Indexing completed successfully completed.")
+	log.Println("Indexing completed successfully.")
 }
