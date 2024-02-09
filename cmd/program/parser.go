@@ -2,6 +2,7 @@ package program
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -114,6 +115,14 @@ type Document struct {
 type Parser struct {
 }
 
+type NotEmailError struct{}
+
+func (ner *NotEmailError) Error() string {
+	return ""
+}
+
+var ErrorMail = errors.New("is not email")
+
 // Parse parses the txt email file into the Email structure.
 // If there is an error, it will be of type *PathError.
 func (p *Parser) Parse(filePath string) (*Email, error) {
@@ -122,7 +131,7 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, err
+		return nil, ErrorMail
 	}
 	defer file.Close()
 
@@ -130,16 +139,24 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 	currentField := ""
 	inBody := false
 
+	// Check if the file is an email
+	scanner.Scan()
+	line := scanner.Text()
+	saveLine(&eb, &line, &currentField, filePath, &inBody)
+	isEmail := eb.MessageID.Len() != 0
+	if !isEmail {
+		return nil, errors.New(fmt.Sprintf("the file %s is not an email", filePath))
+	}
+
 	for scanner.Scan() {
 		line := scanner.Text()
-		if isValid := saveLine(&eb, &line, &currentField, filePath, &inBody); !isValid {
-			break
-		}
+		saveLine(&eb, &line, &currentField, filePath, &inBody)
 	}
 	em := eb.build()
 	return em, nil
 }
 
+// CheckEmpty
 func CheckEmpty(filePath string) (bool, error) {
 	fi, err := os.Stat(filePath)
 	if err != nil {
@@ -173,38 +190,33 @@ func MapStrings(arr []string, f func(string) string) []string {
 	return newArr
 }
 
-func saveLine(em *EmailBuilder, line *string, currentField *string, filePath string, inBody *bool) bool {
+// saveLine
+func saveLine(em *EmailBuilder, line *string, currentField *string, filePath string, inBody *bool) {
+
 	if *inBody {
-		em.Body.WriteString(*line)
 		em.Body.WriteString("\n")
-		return true
+		em.Body.WriteString(*line)
+		return
 	}
 	subStrings := strings.SplitN(*line, ":", 2)
-	first := subStrings[0]
 
-	if idx := util.IndexOf(first, fields); idx == -1 { // Continues in a section.
-		//addLine(*line, *currentField, em, filePath)
-		setValue(*currentField, line, em, filePath)
+	// Check if continues in a section.
+	// Probably this will not work always.
+	if idx := util.IndexOf(subStrings[0], fields); idx == -1 && em.Body.Len() == 0 {
+		addLine(line, *currentField, em, filePath)
 	} else if len(subStrings) == 2 {
 		*currentField = subStrings[0]
 		line := strings.TrimSpace(subStrings[1])
 		setValue(*currentField, &line, em, filePath)
 	}
-	// TODO: Move this validation to do it just once.
-	//if em.MessageID.String() == "" {
-	//	log.Printf("The file %s is not an email, skipped.\n", filePath)
-	//	return false
-	//}
-
 	*inBody = *currentField == "X-FileName"
-	return true
 }
 
+// setValue
 func setValue(currentField string, l *string, em *EmailBuilder, filePath string) {
 	switch currentField {
 	case "Message-ID":
 		em.MessageID.WriteString(*l)
-		em.MessageID.WriteString("\n")
 	case "Date":
 		em.Date.WriteString(*l)
 	case "From":
@@ -253,48 +265,60 @@ func setValue(currentField string, l *string, em *EmailBuilder, filePath string)
 	}
 }
 
-func addLine(l string, currentField string, em *Email, filePath string) {
+// addLine
+func addLine(l *string, currentField string, em *EmailBuilder, filePath string) {
 
 	switch currentField {
 	case "Message-ID":
-		em.MessageID += l
+		em.MessageID.WriteString("\n")
+		em.MessageID.WriteString(*l)
 	case "Date":
-		em.Date += l
+		em.Date.WriteString("\n")
+		em.Date.WriteString(*l)
 	case "From":
-		em.From += l
+		em.From.WriteString("\n")
+		em.From.WriteString(*l)
 	case "To":
-		em.To = append(em.To, parseAddresses(l)...)
-		em.To = append(em.To, parseNames(l)...)
+		em.To = append(em.To, parseAddresses(*l)...)
+		em.To = append(em.To, parseNames(*l)...)
 	case "Cc":
-		em.CC = parseAddresses(l)
-		em.CC = append(em.CC, parseNames(l)...)
+		em.CC = append(em.CC, parseAddresses(*l)...)
+		em.CC = append(em.CC, parseNames(*l)...)
 	case "Bcc":
-		em.BCC = parseAddresses(l)
-		em.BCC = append(em.BCC, parseNames(l)...)
+		em.BCC = append(em.BCC, parseAddresses(*l)...)
+		em.BCC = append(em.BCC, parseNames(*l)...)
 	case "Subject":
-		em.Subject += "\n" + l
+		em.Subject.WriteString("\n")
+		em.Subject.WriteString(*l)
 	case "Mime-Version":
-		em.MimeVersion += l
+		em.MimeVersion.WriteString("\n")
+		em.MimeVersion.WriteString(*l)
 	case "Content-Type":
-		em.ContentType += l
+		em.ContentType.WriteString("\n")
+		em.ContentType.WriteString(*l)
 	case "Content-Transfer-Encoding":
-		em.ContentTransferEncoding += l
+		em.ContentTransferEncoding.WriteString("\n")
+		em.ContentTransferEncoding.WriteString(*l)
 	case "X-From":
-		em.XFrom += l
+		em.XFrom.WriteString("\n")
+		em.XFrom.WriteString(*l)
 	case "X-To":
-		em.XTo = append(em.XTo, MapStrings(strings.Split(l, ","), strings.TrimSpace)...)
+		em.XTo = append(em.XTo, MapStrings(strings.Split(*l, ","), strings.TrimSpace)...)
 	case "X-cc":
-		em.Xcc = parseAddresses(l)
-		em.Xcc = append(em.Xcc, parseNames(l)...)
+		em.Xcc = append(em.Xcc, parseAddresses(*l)...)
+		em.Xcc = append(em.Xcc, parseNames(*l)...)
 	case "X-bcc":
-		em.Xbcc = parseAddresses(l)
-		em.Xbcc = append(em.Xbcc, parseNames(l)...)
+		em.Xbcc = append(em.Xbcc, parseAddresses(*l)...)
+		em.Xbcc = append(em.Xbcc, parseNames(*l)...)
 	case "X-Folder":
-		em.XFolder += l
+		em.XFolder.WriteString("\n")
+		em.XFolder.WriteString(*l)
 	case "X-Origin":
-		em.XOrigin += l
+		em.XOrigin.WriteString("\n")
+		em.XOrigin.WriteString(*l)
 	case "X-FileName":
-		em.XFileName += l
+		em.XFileName.WriteString("\n")
+		em.XFileName.WriteString(*l)
 	default:
 		fmt.Println("addLine: No match found and currentLine =", currentField, "file:", filePath)
 	}
