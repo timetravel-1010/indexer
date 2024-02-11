@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/timetravel-1010/indexer/cmd/util"
@@ -34,11 +33,6 @@ var (
 	}
 )
 
-const (
-	regexEmailAddress = `[\w._%+-]+@[\w.-]+\.[A-Za-z]{2,}`
-	regexName         = `^[a-zA-ZÀ-ÿ0-9 ()-]*$`
-)
-
 // An Email contains all the information of an e-mail.
 type Email struct {
 	MessageID               string   `json:"messageId"`
@@ -61,6 +55,7 @@ type Email struct {
 	Body                    string   `json:"body"`
 }
 
+// An EmailBuilder
 type EmailBuilder struct {
 	MessageID               strings.Builder
 	Date                    strings.Builder
@@ -82,6 +77,7 @@ type EmailBuilder struct {
 	Body                    strings.Builder
 }
 
+// build
 func (eb *EmailBuilder) build() *Email {
 	return &Email{
 		MessageID:               eb.MessageID.String(),
@@ -112,16 +108,7 @@ type Document struct {
 }
 
 // A Parser
-type Parser struct {
-}
-
-type NotEmailError struct{}
-
-func (ner *NotEmailError) Error() string {
-	return ""
-}
-
-var ErrorMail = errors.New("is not email")
+type Parser struct{}
 
 // Parse parses the txt email file into the Email structure.
 // If there is an error, it will be of type *PathError.
@@ -131,7 +118,7 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, ErrorMail
+		return nil, errors.New("Error opening the file")
 	}
 	defer file.Close()
 
@@ -152,8 +139,7 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 		line := scanner.Text()
 		saveLine(&eb, &line, &currentField, filePath, &inBody)
 	}
-	em := eb.build()
-	return em, nil
+	return eb.build(), nil
 }
 
 // CheckEmpty
@@ -164,21 +150,6 @@ func CheckEmpty(filePath string) (bool, error) {
 	}
 
 	return (fi.Size() == 0), nil
-}
-
-// parseAddresses
-func parseAddresses(s string) []string {
-	return GetStringsByRegexp(s, regexEmailAddress)
-}
-
-// parseNames
-func parseNames(s string) []string {
-	return GetStringsByRegexp(s, regexName)
-}
-
-// GetStringsByRegexp
-func GetStringsByRegexp(s string, regex string) []string {
-	return regexp.MustCompile(regex).FindAllString(s, -1)
 }
 
 // MapStrings
@@ -198,7 +169,17 @@ func saveLine(em *EmailBuilder, line *string, currentField *string, filePath str
 		em.Body.WriteString(*line)
 		return
 	}
-	subStrings := strings.SplitN(*line, ":", 2)
+	// Pending try to do this using strings.Prefix
+	//subStrings := strings.SplitN(*line, ":", 2)
+	for _, field := range fields {
+		// New field
+		if strings.HasPrefix(*line, field) {
+			strings.Pre
+			setValue(*currentField, line, em, filePath)
+		}
+		// Continues in a field
+		addLine(line, *currentField, em, filePath)
+	}
 
 	// Check if continues in a section.
 	// Probably this will not work always.
