@@ -3,11 +3,13 @@ package program
 import (
 	"strings"
 	"testing"
+
+	"github.com/timetravel-1010/indexer/cmd/util"
 )
 
 func TestCheckEmptyEmail(t *testing.T) {
 	fileName := "../../samples/empty.txt"
-	isEmpty, err := CheckEmpty(fileName)
+	isEmpty, err := util.CheckEmpty(fileName)
 
 	if err != nil {
 		t.Fatalf("Error parsing an empty email file! %v", err)
