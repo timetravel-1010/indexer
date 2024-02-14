@@ -67,22 +67,3 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 	}
 	return eb.build(), nil
 }
-
-// CheckEmpty
-func CheckEmpty(filePath string) (bool, error) {
-	fi, err := os.Stat(filePath)
-	if err != nil {
-		return true, err
-	}
-
-	return (fi.Size() == 0), nil
-}
-
-// MapStrings
-func MapStrings(arr []string, f func(string) string) []string {
-	newArr := make([]string, len(arr))
-	for i, s := range arr {
-		newArr[i] = f(s)
-	}
-	return newArr
-}

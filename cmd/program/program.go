@@ -8,6 +8,8 @@ import (
 	"io/fs"
 	"log"
 	"path/filepath"
+
+	"github.com/timetravel-1010/indexer/cmd/util"
 )
 
 // Indexer
@@ -27,7 +29,7 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 
-			if isEmpty, err := CheckEmpty(path); isEmpty && err == nil {
+			if isEmpty, err := util.CheckEmpty(path); isEmpty && err == nil {
 				fmt.Printf("The file %s is empty.\n", path)
 				return nil
 			} else if err != nil {

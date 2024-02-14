@@ -3,6 +3,8 @@ package program
 import (
 	"fmt"
 	"strings"
+
+	"github.com/timetravel-1010/indexer/cmd/util"
 )
 
 // An Email contains all the information of an e-mail.
@@ -53,6 +55,7 @@ type EmailBuilder struct {
 
 var setterMap map[string]func(*string)
 
+// NewEmailBuilder returns a pointer to a new EmailBuilder struct with zero values.
 func NewEmailBuilder() *EmailBuilder {
 	eb := &EmailBuilder{}
 	setterMap = setterMapBuilder(eb)
@@ -125,7 +128,9 @@ func setterMapBuilder(eb *EmailBuilder) map[string]func(*string) {
 		"Content-Type: ":              func(lineContent *string) { eb.ContentType.WriteString(*lineContent) },
 		"Content-Transfer-Encoding: ": func(lineContent *string) { eb.ContentTransferEncoding.WriteString(*lineContent) },
 		"X-From: ":                    func(lineContent *string) { eb.XFrom.WriteString(*lineContent) },
-		"X-To: ":                      func(lineContent *string) { eb.XTo = MapStrings(strings.Split(*lineContent, ","), strings.TrimSpace) },
+		"X-To: ": func(lineContent *string) {
+			eb.XTo = util.MapStrings(strings.Split(*lineContent, ","), strings.TrimSpace)
+		},
 		"X-cc: ": func(lineContent *string) {
 			eb.Xcc = parseAddresses(*lineContent)
 			eb.Xcc = append(eb.Xcc, parseNames(*lineContent)...)
@@ -184,7 +189,7 @@ func (eb *EmailBuilder) setValueDeprecated(l *string, currentField, filePath str
 	case "X-From: ":
 		eb.XFrom.WriteString(*l)
 	case "X-To: ":
-		eb.XTo = MapStrings(strings.Split(*l, ","), strings.TrimSpace)
+		eb.XTo = util.MapStrings(strings.Split(*l, ","), strings.TrimSpace)
 	case "X-cc: ":
 		eb.Xcc = parseAddresses(*l)
 		eb.Xcc = append(eb.Xcc, parseNames(*l)...)
@@ -245,7 +250,7 @@ func (eb *EmailBuilder) addLine(l *string, filePath string) {
 		eb.XFrom.WriteString("\n")
 		eb.XFrom.WriteString(*l)
 	case "X-To: ":
-		eb.XTo = append(eb.XTo, MapStrings(strings.Split(*l, ","), strings.TrimSpace)...)
+		eb.XTo = append(eb.XTo, util.MapStrings(strings.Split(*l, ","), strings.TrimSpace)...)
 	case "X-cc: ":
 		eb.Xcc = append(eb.Xcc, parseAddresses(*l)...)
 		eb.Xcc = append(eb.Xcc, parseNames(*l)...)
