@@ -1,39 +1,18 @@
-package program
+package parser
 
 import (
 	"bufio"
 	"errors"
 	"fmt"
 	"os"
-)
 
-var (
-	fields = []string{
-		"Message-ID: ",
-		"Date: ",
-		"From: ",
-		"To: ",
-		"Cc: ",
-		"Bcc: ",
-		"Subject: ",
-		"Mime-Version: ",
-		"Content-Type: ",
-		"Content-Transfer-Encoding: ",
-		"X-From: ",
-		"X-To: ",
-		"X-cc: ",
-		"X-bcc: ",
-		"X-Folder: ",
-		"X-Origin: ",
-		"X-FileName: ",
-		"Body",
-	}
+	"github.com/timetravel-1010/indexer/internal/email"
 )
 
 // A Document contains the path of the email and the email itself.
 type Document struct {
-	Path  string `json:"path"` // path to the email.
-	Email *Email `json:"email"`
+	Path  string       `json:"path"` // path to the email.
+	Email *email.Email `json:"email"`
 }
 
 // A Parser
@@ -41,8 +20,8 @@ type Parser struct{}
 
 // Parse parses the txt email file into the Email structure.
 // If there is an error, it will be of type *PathError.
-func (p *Parser) Parse(filePath string) (*Email, error) {
-	eb := NewEmailBuilder()
+func (p *Parser) Parse(filePath string) (*email.Email, error) {
+	eb := email.NewEmailBuilder()
 
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -65,5 +44,5 @@ func (p *Parser) Parse(filePath string) (*Email, error) {
 		line := scanner.Text()
 		eb.SaveLine(&line, filePath)
 	}
-	return eb.build(), nil
+	return eb.Build(), nil
 }

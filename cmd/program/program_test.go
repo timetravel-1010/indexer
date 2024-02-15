@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+
+	"github.com/timetravel-1010/indexer/internal/parser"
 )
 
 var (
@@ -20,7 +22,7 @@ var (
 
 	directory = "../enron_mail_20110402"
 	indexer   = Indexer{
-		Parser: Parser{},
+		Parser: parser.Parser{},
 	}
 )
 

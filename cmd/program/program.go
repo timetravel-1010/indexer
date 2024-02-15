@@ -10,11 +10,12 @@ import (
 	"path/filepath"
 
 	"github.com/timetravel-1010/indexer/cmd/util"
+	"github.com/timetravel-1010/indexer/internal/parser"
 )
 
 // Indexer
 type Indexer struct {
-	Parser Parser
+	Parser parser.Parser
 	path   string
 }
 
@@ -23,12 +24,10 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 	var counter int = 0
 	buf := &bytes.Buffer{}
 	encoder := json.NewEncoder(buf)
-	//emails := []Document{}
 
 	log.Println("Indexing documents...")
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
-
 			if isEmpty, err := util.CheckEmpty(path); isEmpty && err == nil {
 				fmt.Printf("The file %s is empty.\n", path)
 				return nil
@@ -40,10 +39,6 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 			if err != nil {
 				return err
 			}
-			if em == nil { // Is Empty
-				return nil
-			}
-			//emails = append(emails, Document{Path: path, Email: em})
 
 			encoder.Encode(IndexAction{
 				Index: IndexDocument{
@@ -51,19 +46,12 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 				},
 			})
 
-			encoder.Encode(Document{
+			encoder.Encode(parser.Document{
 				Path:  path,
 				Email: em,
 			})
 			counter++
 			if counter == 100 {
-				//postBody, _ := json.Marshal(Payload{
-				//	Index:        re.Index,
-				//	DocumentData: emails,
-				//})
-				//buf := bytes.NewBuffer(postBody)
-				//buf := &bytes.Buffer{}
-				//json.NewEncoder(buf).Encode(Payload{Index: re.Index, DocumentData: emails})
 				if err := Upload(re, buf); err != nil {
 					return err
 				}
@@ -73,7 +61,7 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 		return nil
 	})
 	if err != nil {
-		panic("Error while opening the files!")
+		panic("Error while indexing the files!")
 	}
 	if counter > 0 {
 		//json.NewEncoder().Encode(Payload{Index: re.Index, DocumentData: emails})

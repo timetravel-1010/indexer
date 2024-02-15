@@ -7,6 +7,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/timetravel-1010/indexer/internal/parser"
 )
 
 type Credentials struct {
@@ -31,8 +33,8 @@ type IndexAction struct {
 }
 
 type Payload struct {
-	Index        string     `json:"index"`
-	DocumentData []Document `json:"records"`
+	Index        string            `json:"index"`
+	DocumentData []parser.Document `json:"records"`
 }
 
 var client = &http.Client{}

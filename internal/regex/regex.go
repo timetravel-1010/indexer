@@ -1,4 +1,4 @@
-package program
+package regex
 
 import "regexp"
 
@@ -8,16 +8,16 @@ const (
 )
 
 // parseAddresses
-func parseAddresses(s string) []string {
-	return GetStringsByRegexp(s, regexEmailAddress)
+func ParseAddresses(s string) []string {
+	return getStringsByRegexp(s, regexEmailAddress)
 }
 
 // parseNames
-func parseNames(s string) []string {
-	return GetStringsByRegexp(s, regexName)
+func ParseNames(s string) []string {
+	return getStringsByRegexp(s, regexName)
 }
 
 // GetStringsByRegexp
-func GetStringsByRegexp(s string, regex string) []string {
+func getStringsByRegexp(s string, regex string) []string {
 	return regexp.MustCompile(regex).FindAllString(s, -1)
 }
