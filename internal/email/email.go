@@ -1,10 +1,34 @@
-package program
+package email
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/timetravel-1010/indexer/cmd/util"
+	"github.com/timetravel-1010/indexer/internal/regex"
+)
+
+var (
+	fields = []string{
+		"Message-ID: ",
+		"Date: ",
+		"From: ",
+		"To: ",
+		"Cc: ",
+		"Bcc: ",
+		"Subject: ",
+		"Mime-Version: ",
+		"Content-Type: ",
+		"Content-Transfer-Encoding: ",
+		"X-From: ",
+		"X-To: ",
+		"X-cc: ",
+		"X-bcc: ",
+		"X-Folder: ",
+		"X-Origin: ",
+		"X-FileName: ",
+		"Body",
+	}
 )
 
 // An Email contains all the information of an e-mail.
@@ -62,8 +86,8 @@ func NewEmailBuilder() *EmailBuilder {
 	return eb
 }
 
-// build
-func (eb *EmailBuilder) build() *Email {
+// Build
+func (eb *EmailBuilder) Build() *Email {
 	return &Email{
 		MessageID:               eb.MessageID.String(),
 		Date:                    eb.Date.String(),
@@ -112,16 +136,16 @@ func setterMapBuilder(eb *EmailBuilder) map[string]func(*string) {
 		"Date: ":       func(lineContent *string) { eb.Date.WriteString(*lineContent) },
 		"From: ":       func(lineContent *string) { eb.From.WriteString(*lineContent) },
 		"To: ": func(lineContent *string) {
-			eb.To = parseAddresses(*lineContent)
-			eb.To = append(eb.To, parseNames(*lineContent)...)
+			eb.To = regex.ParseAddresses(*lineContent)
+			eb.To = append(eb.To, regex.ParseNames(*lineContent)...)
 		},
 		"Cc: ": func(lineContent *string) {
-			eb.CC = parseAddresses(*lineContent)
-			eb.CC = append(eb.CC, parseNames(*lineContent)...)
+			eb.CC = regex.ParseAddresses(*lineContent)
+			eb.CC = append(eb.CC, regex.ParseNames(*lineContent)...)
 		},
 		"Bcc: ": func(lineContent *string) {
-			eb.BCC = parseAddresses(*lineContent)
-			eb.BCC = append(eb.BCC, parseNames(*lineContent)...)
+			eb.BCC = regex.ParseAddresses(*lineContent)
+			eb.BCC = append(eb.BCC, regex.ParseNames(*lineContent)...)
 		},
 		"Subject: ":                   func(lineContent *string) { eb.Subject.WriteString(*lineContent) },
 		"Mime-Version: ":              func(lineContent *string) { eb.MimeVersion.WriteString(*lineContent) },
@@ -132,12 +156,12 @@ func setterMapBuilder(eb *EmailBuilder) map[string]func(*string) {
 			eb.XTo = util.MapStrings(strings.Split(*lineContent, ","), strings.TrimSpace)
 		},
 		"X-cc: ": func(lineContent *string) {
-			eb.Xcc = parseAddresses(*lineContent)
-			eb.Xcc = append(eb.Xcc, parseNames(*lineContent)...)
+			eb.Xcc = regex.ParseAddresses(*lineContent)
+			eb.Xcc = append(eb.Xcc, regex.ParseNames(*lineContent)...)
 		},
 		"X-bcc: ": func(lineContent *string) {
-			eb.Xbcc = parseAddresses(*lineContent)
-			eb.Xbcc = append(eb.Xbcc, parseNames(*lineContent)...)
+			eb.Xbcc = regex.ParseAddresses(*lineContent)
+			eb.Xbcc = append(eb.Xbcc, regex.ParseNames(*lineContent)...)
 		},
 		"X-Folder: ":   func(lineContent *string) { eb.XFolder.WriteString(*lineContent) },
 		"X-Origin: ":   func(lineContent *string) { eb.XOrigin.WriteString(*lineContent) },
@@ -170,14 +194,14 @@ func (eb *EmailBuilder) setValueDeprecated(l *string, currentField, filePath str
 	case "From: ":
 		eb.From.WriteString(*l)
 	case "To: ":
-		eb.To = parseAddresses(*l)
-		eb.To = append(eb.To, parseNames(*l)...)
+		eb.To = regex.ParseAddresses(*l)
+		eb.To = append(eb.To, regex.ParseNames(*l)...)
 	case "Cc: ":
-		eb.CC = parseAddresses(*l)
-		eb.CC = append(eb.CC, parseNames(*l)...)
+		eb.CC = regex.ParseAddresses(*l)
+		eb.CC = append(eb.CC, regex.ParseNames(*l)...)
 	case "Bcc: ":
-		eb.BCC = parseAddresses(*l)
-		eb.BCC = append(eb.BCC, parseNames(*l)...)
+		eb.BCC = regex.ParseAddresses(*l)
+		eb.BCC = append(eb.BCC, regex.ParseNames(*l)...)
 	case "Subject: ":
 		eb.Subject.WriteString(*l)
 	case "Mime-Version: ":
@@ -191,11 +215,11 @@ func (eb *EmailBuilder) setValueDeprecated(l *string, currentField, filePath str
 	case "X-To: ":
 		eb.XTo = util.MapStrings(strings.Split(*l, ","), strings.TrimSpace)
 	case "X-cc: ":
-		eb.Xcc = parseAddresses(*l)
-		eb.Xcc = append(eb.Xcc, parseNames(*l)...)
+		eb.Xcc = regex.ParseAddresses(*l)
+		eb.Xcc = append(eb.Xcc, regex.ParseNames(*l)...)
 	case "X-bcc: ":
-		eb.Xbcc = parseAddresses(*l)
-		eb.Xbcc = append(eb.Xbcc, parseNames(*l)...)
+		eb.Xbcc = regex.ParseAddresses(*l)
+		eb.Xbcc = append(eb.Xbcc, regex.ParseNames(*l)...)
 	case "X-Folder: ":
 		eb.XFolder.WriteString(*l)
 	case "X-Origin: ":
@@ -226,14 +250,14 @@ func (eb *EmailBuilder) addLine(l *string, filePath string) {
 		eb.From.WriteString("\n")
 		eb.From.WriteString(*l)
 	case "To: ":
-		eb.To = append(eb.To, parseAddresses(*l)...)
-		eb.To = append(eb.To, parseNames(*l)...)
+		eb.To = append(eb.To, regex.ParseAddresses(*l)...)
+		eb.To = append(eb.To, regex.ParseNames(*l)...)
 	case "Cc: ":
-		eb.CC = append(eb.CC, parseAddresses(*l)...)
-		eb.CC = append(eb.CC, parseNames(*l)...)
+		eb.CC = append(eb.CC, regex.ParseAddresses(*l)...)
+		eb.CC = append(eb.CC, regex.ParseNames(*l)...)
 	case "Bcc: ":
-		eb.BCC = append(eb.BCC, parseAddresses(*l)...)
-		eb.BCC = append(eb.BCC, parseNames(*l)...)
+		eb.BCC = append(eb.BCC, regex.ParseAddresses(*l)...)
+		eb.BCC = append(eb.BCC, regex.ParseNames(*l)...)
 	case "Subject: ":
 		eb.Subject.WriteString("\n")
 		eb.Subject.WriteString(*l)
@@ -252,11 +276,11 @@ func (eb *EmailBuilder) addLine(l *string, filePath string) {
 	case "X-To: ":
 		eb.XTo = append(eb.XTo, util.MapStrings(strings.Split(*l, ","), strings.TrimSpace)...)
 	case "X-cc: ":
-		eb.Xcc = append(eb.Xcc, parseAddresses(*l)...)
-		eb.Xcc = append(eb.Xcc, parseNames(*l)...)
+		eb.Xcc = append(eb.Xcc, regex.ParseAddresses(*l)...)
+		eb.Xcc = append(eb.Xcc, regex.ParseNames(*l)...)
 	case "X-bcc: ":
-		eb.Xbcc = append(eb.Xbcc, parseAddresses(*l)...)
-		eb.Xbcc = append(eb.Xbcc, parseNames(*l)...)
+		eb.Xbcc = append(eb.Xbcc, regex.ParseAddresses(*l)...)
+		eb.Xbcc = append(eb.Xbcc, regex.ParseNames(*l)...)
 	case "X-Folder: ":
 		eb.XFolder.WriteString("\n")
 		eb.XFolder.WriteString(*l)

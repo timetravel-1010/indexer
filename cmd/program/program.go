@@ -10,11 +10,12 @@ import (
 	"path/filepath"
 
 	"github.com/timetravel-1010/indexer/cmd/util"
+	"github.com/timetravel-1010/indexer/internal/parser"
 )
 
 // Indexer
 type Indexer struct {
-	Parser Parser
+	Parser parser.Parser
 	path   string
 }
 
@@ -45,7 +46,7 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 				},
 			})
 
-			encoder.Encode(Document{
+			encoder.Encode(parser.Document{
 				Path:  path,
 				Email: em,
 			})
