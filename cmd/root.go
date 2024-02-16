@@ -4,12 +4,13 @@ import (
 	"flag"
 
 	"github.com/timetravel-1010/indexer/cmd/program"
+	"github.com/timetravel-1010/indexer/internal/parser"
 )
 
 var (
 	flags   = Flags{}
 	indexer = program.Indexer{
-		Parser: program.Parser{},
+		Parser: parser.Parser{},
 	}
 )
 
