@@ -1,8 +1,10 @@
 package main
 
 import (
-	"github.com/timetravel-1010/indexer/cmd/program"
 	"testing"
+
+	"github.com/timetravel-1010/indexer/cmd/program"
+	"github.com/timetravel-1010/indexer/internal/parser"
 )
 
 var (
@@ -19,7 +21,7 @@ var (
 
 	directory = "../enron_mail_20110402"
 	indexer   = program.Indexer{
-		Parser: program.Parser{},
+		Parser: parser.Parser{},
 	}
 )
 

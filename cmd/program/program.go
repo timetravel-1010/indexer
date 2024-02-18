@@ -15,7 +15,7 @@ import (
 
 // Indexer
 type Indexer struct {
-	Parser parser.Parser
+	Parser parser.ParserI
 	path   string
 }
 
@@ -26,6 +26,7 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 	encoder := json.NewEncoder(buf)
 
 	log.Println("Indexing documents...")
+
 	err := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if !info.IsDir() {
 			if isEmpty, err := util.CheckEmpty(path); isEmpty && err == nil {
@@ -37,7 +38,7 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 
 			em, err := in.Parser.Parse(path)
 			if err != nil {
-				return err
+				return err 
 			}
 
 			encoder.Encode(IndexAction{
@@ -46,7 +47,7 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 				},
 			})
 
-			encoder.Encode(parser.Document{
+			encoder.Encode(parser.Doc{
 				Path:  path,
 				Email: em,
 			})
@@ -61,22 +62,13 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 		return nil
 	})
 	if err != nil {
-		panic("Error while indexing the files!")
+		fmt.Println("error while indexing the files!", err)
+		return
 	}
 	if counter > 0 {
-		//json.NewEncoder().Encode(Payload{Index: re.Index, DocumentData: emails})
-		//postBody, _ := json.Marshal(Payload{
-		//	Index:        re.Index,
-		//DocumentData: emails,
-		//})
-
-		//buf := bytes.NewBuffer()
-		//buf := &bytes.Buffer{}
-		//json.NewEncoder(buf).Encode(Payload{Index: re.Index, DocumentData: emails})
 		if err := Upload(re, buf); err != nil {
 			log.Printf("error uploading the files: %v", err)
 		}
-
 	}
 	log.Println("Indexing completed successfully.")
 }
