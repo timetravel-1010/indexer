@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/timetravel-1010/indexer/internal/email"
+	"github.com/timetravel-1010/indexer/internal/stdparser"
 )
 
 // A Document contains the path of the email and the email itself.
@@ -15,12 +16,26 @@ type Document struct {
 	Email *email.Email `json:"email"`
 }
 
+type Doc struct {
+	Path  string       `json:"path"` // path to the email.
+	Email email.EmailI `json:"email"`
+}
+
+type Document2 struct {
+	Path  string             `json:"path"` // path to the email.
+	Email stdparser.StdEmail `json:"email"`
+}
+
 // A Parser
+type ParserI interface {
+	Parse(string) (email.EmailI, error)
+}
+
 type Parser struct{}
 
 // Parse parses the txt email file into the Email structure.
 // If there is an error, it will be of type *PathError.
-func (p *Parser) Parse(filePath string) (*email.Email, error) {
+func (p Parser) Parse(filePath string) (email.EmailI, error) {
 	eb := email.NewEmailBuilder()
 
 	file, err := os.Open(filePath)

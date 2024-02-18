@@ -53,6 +53,12 @@ type Email struct {
 	Body                    string   `json:"body"`
 }
 
+type EmailI interface {
+	DoSomething()
+}
+
+func (em Email) DoSomething() {}
+
 // An EmailBuilder
 type EmailBuilder struct {
 	MessageID               strings.Builder
