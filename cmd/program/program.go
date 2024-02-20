@@ -38,7 +38,7 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 
 			em, err := in.Parser.Parse(path)
 			if err != nil {
-				return err 
+				return err
 			}
 
 			encoder.Encode(IndexAction{
@@ -47,7 +47,7 @@ func (in *Indexer) Index(dir string, re HttpRequest) {
 				},
 			})
 
-			encoder.Encode(parser.Doc{
+			encoder.Encode(parser.Document{
 				Path:  path,
 				Email: em,
 			})
