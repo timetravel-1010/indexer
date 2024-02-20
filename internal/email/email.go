@@ -2,9 +2,10 @@ package email
 
 import (
 	"fmt"
+	"log"
+	"net/mail"
 	"strings"
 
-	"github.com/timetravel-1010/indexer/cmd/util"
 	"github.com/timetravel-1010/indexer/internal/regex"
 )
 
@@ -33,24 +34,24 @@ var (
 
 // An Email contains all the information of an e-mail.
 type Email struct {
-	MessageID               string   `json:"messageId"`
-	Date                    string   `json:"date"`
-	From                    string   `json:"from"`
-	To                      []string `json:"to"`
-	CC                      []string `json:"cc"`
-	BCC                     []string `json:"bcc"`
-	Subject                 string   `json:"subject"`
-	MimeVersion             string   `json:"mimeVersion"`
-	ContentType             string   `json:"contentType"`
-	ContentTransferEncoding string   `json:"contentTransferEncoding"`
-	XFrom                   string   `json:"xFrom"`
-	XTo                     []string `json:"xTo"`
-	Xcc                     []string `json:"xcc"`
-	Xbcc                    []string `json:"xbcc"`
-	XFolder                 string   `json:"xFolder"`
-	XOrigin                 string   `json:"xOrigin"`
-	XFileName               string   `json:"xFileName"`
-	Body                    string   `json:"body"`
+	MessageID               string          `json:"Message-Id"`
+	Date                    string          `json:"Date"`
+	From                    string          `json:"From"`
+	To                      []*mail.Address `json:"To"`
+	CC                      []*mail.Address `json:"Cc"`
+	BCC                     []*mail.Address `json:"Bcc"`
+	Subject                 string          `json:"Subject"`
+	MimeVersion             string          `json:"Mime-Version"`
+	ContentType             string          `json:"Content-Type"`
+	ContentTransferEncoding string          `json:"Content-Transfer-Encoding"`
+	XFrom                   string          `json:"X-From"`
+	XTo                     []*mail.Address `json:"X-To"`
+	Xcc                     []*mail.Address `json:"X-Cc"`
+	Xbcc                    []*mail.Address `json:"X-Bcc"`
+	XFolder                 string          `json:"X-Folder"`
+	XOrigin                 string          `json:"X-Origin"`
+	XFileName               string          `json:"X-Filename"`
+	Body                    string          `json:"Body"`
 }
 
 type EmailI interface {
@@ -64,17 +65,17 @@ type EmailBuilder struct {
 	MessageID               strings.Builder
 	Date                    strings.Builder
 	From                    strings.Builder
-	To                      []string
-	CC                      []string
-	BCC                     []string
+	To                      []*mail.Address
+	CC                      []*mail.Address
+	BCC                     []*mail.Address
 	Subject                 strings.Builder
 	MimeVersion             strings.Builder
 	ContentType             strings.Builder
 	ContentTransferEncoding strings.Builder
 	XFrom                   strings.Builder
-	XTo                     []string
-	Xcc                     []string
-	Xbcc                    []string
+	XTo                     []*mail.Address
+	Xcc                     []*mail.Address
+	Xbcc                    []*mail.Address
 	XFolder                 strings.Builder
 	XOrigin                 strings.Builder
 	XFileName               strings.Builder
@@ -83,7 +84,7 @@ type EmailBuilder struct {
 	currentField            string
 }
 
-var setterMap map[string]func(*string)
+var setterMap map[string]func(*string) error
 
 // NewEmailBuilder returns a pointer to a new EmailBuilder struct with zero values.
 func NewEmailBuilder() *EmailBuilder {
@@ -123,57 +124,98 @@ func (eb *EmailBuilder) SaveLine(line *string, filePath string) {
 		eb.Body.WriteString(*line)
 		return
 	}
+
 	for _, field := range fields {
 		if after, found := strings.CutPrefix(*line, field); found {
 			eb.currentField = field
-			eb.setValue(&after, filePath)
+			// TODO: pending check if after (lineContent) is "", " ", etc.
+			err := eb.setValue(&after, filePath)
+			if err != nil {
+				log.Println("error in SaveLine: ", err)
+			}
 			//setValue(*currentField, &after, eb, filePath)
 			eb.inBody = eb.currentField == "X-FileName: "
 			return
 		}
 	}
 	// Continues in a field
-	eb.addLine(line, filePath)
+	err := eb.setValue(line, filePath)
+	if err != nil {
+		log.Println("error in SaveLine:", err)
+	}
 }
 
-func setterMapBuilder(eb *EmailBuilder) map[string]func(*string) {
-	return map[string]func(*string){
-		"Message-ID: ": func(lineContent *string) { eb.MessageID.WriteString(*lineContent) },
-		"Date: ":       func(lineContent *string) { eb.Date.WriteString(*lineContent) },
-		"From: ":       func(lineContent *string) { eb.From.WriteString(*lineContent) },
-		"To: ": func(lineContent *string) {
-			eb.To = regex.ParseAddresses(*lineContent)
-			eb.To = append(eb.To, regex.ParseNames(*lineContent)...)
+func setterMapBuilder(eb *EmailBuilder) map[string]func(*string) error {
+	return map[string]func(*string) error{
+		"Message-ID: ": func(lineContent *string) error {
+			_, err := eb.MessageID.WriteString(*lineContent)
+			return err
 		},
-		"Cc: ": func(lineContent *string) {
-			eb.CC = regex.ParseAddresses(*lineContent)
-			eb.CC = append(eb.CC, regex.ParseNames(*lineContent)...)
+		"Date: ": func(lineContent *string) error {
+			_, err := eb.Date.WriteString(*lineContent)
+			return err
 		},
-		"Bcc: ": func(lineContent *string) {
-			eb.BCC = regex.ParseAddresses(*lineContent)
-			eb.BCC = append(eb.BCC, regex.ParseNames(*lineContent)...)
+		"From: ": func(lineContent *string) error {
+			_, err := eb.From.WriteString(*lineContent)
+			return err
 		},
-		"Subject: ":                   func(lineContent *string) { eb.Subject.WriteString(*lineContent) },
-		"Mime-Version: ":              func(lineContent *string) { eb.MimeVersion.WriteString(*lineContent) },
-		"Content-Type: ":              func(lineContent *string) { eb.ContentType.WriteString(*lineContent) },
-		"Content-Transfer-Encoding: ": func(lineContent *string) { eb.ContentTransferEncoding.WriteString(*lineContent) },
-		"X-From: ":                    func(lineContent *string) { eb.XFrom.WriteString(*lineContent) },
-		"X-To: ": func(lineContent *string) {
-			eb.XTo = util.MapStrings(strings.Split(*lineContent, ","), strings.TrimSpace)
+		"To: ": func(lineContent *string) error {
+			setAddresses(&eb.To, lineContent)
+			return nil
 		},
-		"X-cc: ": func(lineContent *string) {
-			eb.Xcc = regex.ParseAddresses(*lineContent)
-			eb.Xcc = append(eb.Xcc, regex.ParseNames(*lineContent)...)
+		"Cc: ": func(lineContent *string) error {
+			setAddresses(&eb.CC, lineContent)
+			return nil
 		},
-		"X-bcc: ": func(lineContent *string) {
-			eb.Xbcc = regex.ParseAddresses(*lineContent)
-			eb.Xbcc = append(eb.Xbcc, regex.ParseNames(*lineContent)...)
+		"Bcc: ": func(lineContent *string) error {
+			setAddresses(&eb.BCC, lineContent)
+			return nil
 		},
-		"X-Folder: ":   func(lineContent *string) { eb.XFolder.WriteString(*lineContent) },
-		"X-Origin: ":   func(lineContent *string) { eb.XOrigin.WriteString(*lineContent) },
-		"X-FileName: ": func(lineContent *string) { eb.XFileName.WriteString(*lineContent) },
+		"Subject: ": func(lineContent *string) error {
+			_, err := eb.Subject.WriteString(*lineContent)
+			return err
+		},
+		"Mime-Version: ": func(lineContent *string) error {
+			_, err := eb.MimeVersion.WriteString(*lineContent)
+			return err
+		},
+		"Content-Type: ": func(lineContent *string) error {
+			_, err := eb.ContentType.WriteString(*lineContent)
+			return err
+		},
+		"Content-Transfer-Encoding: ": func(lineContent *string) error {
+			_, err := eb.ContentTransferEncoding.WriteString(*lineContent)
+			return err
+		},
+		"X-From: ": func(lineContent *string) error {
+			_, err := eb.XFrom.WriteString(*lineContent)
+			return err
+		},
+		"X-To: ": func(lineContent *string) error {
+			setAddresses(&eb.XTo, lineContent)
+			return nil
+		},
+		"X-cc: ": func(lineContent *string) error {
+			setAddresses(&eb.Xcc, lineContent)
+			return nil
+		},
+		"X-bcc: ": func(lineContent *string) error {
+			setAddresses(&eb.BCC, lineContent)
+			return nil
+		},
+		"X-Folder: ": func(lineContent *string) error {
+			_, err := eb.XFolder.WriteString(*lineContent)
+			return err
+		},
+		"X-Origin: ": func(lineContent *string) error {
+			_, err := eb.XOrigin.WriteString(*lineContent)
+			return err
+		},
+		"X-FileName: ": func(lineContent *string) error {
+			_, err := eb.XFileName.WriteString(*lineContent)
+			return err
+		},
 	}
-
 }
 
 // SetValue sets the value of a specific field in the email header.
@@ -181,8 +223,12 @@ func (eb *EmailBuilder) setValue(lineContent *string, filePath string) error {
 	if lineContent == nil {
 		return fmt.Errorf("line content cannot be nil")
 	}
+
 	if setter, ok := setterMap[eb.currentField]; ok {
-		setter(lineContent)
+		err := setter(lineContent)
+		if err != nil {
+			log.Println("error in setterFunc:", eb.currentField, " error:", err)
+		}
 	} else {
 		return fmt.Errorf("no match found for field '%s' in file '%s'", eb.currentField, filePath)
 	}
@@ -190,113 +236,17 @@ func (eb *EmailBuilder) setValue(lineContent *string, filePath string) error {
 	return nil
 }
 
-// setValue
-func (eb *EmailBuilder) setValueDeprecated(l *string, currentField, filePath string) {
-	switch currentField {
-	case "Message-ID: ":
-		eb.MessageID.WriteString(*l)
-	case "Date: ":
-		eb.Date.WriteString(*l)
-	case "From: ":
-		eb.From.WriteString(*l)
-	case "To: ":
-		eb.To = regex.ParseAddresses(*l)
-		eb.To = append(eb.To, regex.ParseNames(*l)...)
-	case "Cc: ":
-		eb.CC = regex.ParseAddresses(*l)
-		eb.CC = append(eb.CC, regex.ParseNames(*l)...)
-	case "Bcc: ":
-		eb.BCC = regex.ParseAddresses(*l)
-		eb.BCC = append(eb.BCC, regex.ParseNames(*l)...)
-	case "Subject: ":
-		eb.Subject.WriteString(*l)
-	case "Mime-Version: ":
-		eb.MimeVersion.WriteString(*l)
-	case "Content-Type: ":
-		eb.ContentType.WriteString(*l)
-	case "Content-Transfer-Encoding: ":
-		eb.ContentTransferEncoding.WriteString(*l)
-	case "X-From: ":
-		eb.XFrom.WriteString(*l)
-	case "X-To: ":
-		eb.XTo = util.MapStrings(strings.Split(*l, ","), strings.TrimSpace)
-	case "X-cc: ":
-		eb.Xcc = regex.ParseAddresses(*l)
-		eb.Xcc = append(eb.Xcc, regex.ParseNames(*l)...)
-	case "X-bcc: ":
-		eb.Xbcc = regex.ParseAddresses(*l)
-		eb.Xbcc = append(eb.Xbcc, regex.ParseNames(*l)...)
-	case "X-Folder: ":
-		eb.XFolder.WriteString(*l)
-	case "X-Origin: ":
-		eb.XOrigin.WriteString(*l)
-	case "X-FileName: ":
-		eb.XFileName.WriteString(*l)
-	default:
-		fmt.Println(fmt.Sprintf(`
-        ===================ERROR NO MATCH FOUND
-        function: setValue
-        l: %s
-        currentLine: %s
-        file: %s
-        ===================END ERROR`, *l, currentField, filePath))
-	}
-}
+// setAddresses
+func setAddresses(addrsField *[]*mail.Address, addrsList *string) {
 
-// addLine
-func (eb *EmailBuilder) addLine(l *string, filePath string) {
-	switch eb.currentField {
-	case "Message-ID: ":
-		eb.MessageID.WriteString("\n")
-		eb.MessageID.WriteString(*l)
-	case "Date: ":
-		eb.Date.WriteString("\n")
-		eb.Date.WriteString(*l)
-	case "From: ":
-		eb.From.WriteString("\n")
-		eb.From.WriteString(*l)
-	case "To: ":
-		eb.To = append(eb.To, regex.ParseAddresses(*l)...)
-		eb.To = append(eb.To, regex.ParseNames(*l)...)
-	case "Cc: ":
-		eb.CC = append(eb.CC, regex.ParseAddresses(*l)...)
-		eb.CC = append(eb.CC, regex.ParseNames(*l)...)
-	case "Bcc: ":
-		eb.BCC = append(eb.BCC, regex.ParseAddresses(*l)...)
-		eb.BCC = append(eb.BCC, regex.ParseNames(*l)...)
-	case "Subject: ":
-		eb.Subject.WriteString("\n")
-		eb.Subject.WriteString(*l)
-	case "Mime-Version: ":
-		eb.MimeVersion.WriteString("\n")
-		eb.MimeVersion.WriteString(*l)
-	case "Content-Type: ":
-		eb.ContentType.WriteString("\n")
-		eb.ContentType.WriteString(*l)
-	case "Content-Transfer-Encoding: ":
-		eb.ContentTransferEncoding.WriteString("\n")
-		eb.ContentTransferEncoding.WriteString(*l)
-	case "X-From: ":
-		eb.XFrom.WriteString("\n")
-		eb.XFrom.WriteString(*l)
-	case "X-To: ":
-		eb.XTo = append(eb.XTo, util.MapStrings(strings.Split(*l, ","), strings.TrimSpace)...)
-	case "X-cc: ":
-		eb.Xcc = append(eb.Xcc, regex.ParseAddresses(*l)...)
-		eb.Xcc = append(eb.Xcc, regex.ParseNames(*l)...)
-	case "X-bcc: ":
-		eb.Xbcc = append(eb.Xbcc, regex.ParseAddresses(*l)...)
-		eb.Xbcc = append(eb.Xbcc, regex.ParseNames(*l)...)
-	case "X-Folder: ":
-		eb.XFolder.WriteString("\n")
-		eb.XFolder.WriteString(*l)
-	case "X-Origin: ":
-		eb.XOrigin.WriteString("\n")
-		eb.XOrigin.WriteString(*l)
-	case "X-FileName: ":
-		eb.XFileName.WriteString("\n")
-		eb.XFileName.WriteString(*l)
-	default:
-		fmt.Println("addLine: No match found and currentLine =", eb.currentField, "file:", filePath)
+	temp := *addrsField
+	pairs := strings.Split(*addrsList, ",")
+
+	for _, pair := range pairs {
+		addr := new(mail.Address)
+		addr.Name = regex.GetName(pair)
+		addr.Address = regex.GetEmailAddress(pair)
+		temp = append(temp, addr)
 	}
+	*addrsField = temp
 }
