@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"log"
 	"net/mail"
 	"os"
 
@@ -27,19 +26,25 @@ func (se StdEmail) DoSomething() {}
 
 type StdParser struct{}
 
+// Parse
 func (sp StdParser) Parse(filePath string) (email.EmailI, error) {
-	file, _ := os.Open(filePath)
+	file, err := os.Open(filePath)
+
+	if err != nil {
+		return nil, err
+	}
+
 	defer file.Close()
 	reader := bufio.NewReader(file)
 
 	msg, err := mail.ReadMessage(reader)
 	if err != nil {
-		log.Println("error in ReadMessage")
 		return nil, err
 	}
 	return getStdEmail(msg)
 }
 
+// getStdEmail
 func getStdEmail(msg *mail.Message) (*StdEmail, error) {
 	m := StdEmail{}
 	buf := &bytes.Buffer{}
@@ -47,9 +52,6 @@ func getStdEmail(msg *mail.Message) (*StdEmail, error) {
 
 	for k, lv := range msg.Header {
 		if listField[k] {
-			if _, ok := m[k]; !ok {
-				continue
-			}
 			m[k], err = msg.Header.AddressList(k)
 
 			if err != nil {
@@ -63,7 +65,7 @@ func getStdEmail(msg *mail.Message) (*StdEmail, error) {
 		m[k] = lv[0]
 	}
 	io.Copy(buf, msg.Body)
-	m["body"] = buf.String()
+	m["Body"] = buf.String()
 
 	return &m, nil
 }

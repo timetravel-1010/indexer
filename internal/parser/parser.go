@@ -7,23 +7,12 @@ import (
 	"os"
 
 	"github.com/timetravel-1010/indexer/internal/email"
-	"github.com/timetravel-1010/indexer/internal/stdparser"
 )
 
 // A Document contains the path of the email and the email itself.
 type Document struct {
 	Path  string       `json:"path"` // path to the email.
-	Email *email.Email `json:"email"`
-}
-
-type Doc struct {
-	Path  string       `json:"path"` // path to the email.
 	Email email.EmailI `json:"email"`
-}
-
-type Document2 struct {
-	Path  string             `json:"path"` // path to the email.
-	Email stdparser.StdEmail `json:"email"`
 }
 
 // A Parser
