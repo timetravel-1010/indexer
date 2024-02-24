@@ -49,14 +49,14 @@ func Execute() {
 }
 
 func init() {
-	flags.directory = flag.String("dir", "enron_mail_20110402", "Path to the email directory.")
-	flags.zincURL = flag.String("zincurl", "localhost", "url for zincsearch host.")
-	flags.port = flag.String("port", "4080", "port for zincsearch host.")
-	flags.user = flag.String("user", "admin", "Username of zincsearch client.")
-	flags.password = flag.String("password", "Complexpass#123", "Password of zincsearch client.")
-	flags._index = flag.String("index", "enron", "Name for the index.")
-	flags._type = flag.String("type", "_doc", "Type of the post request payload.")
-	useCustomImpl = flag.Bool("custom", false, "Use custom implementation instead of std library.")
-	flag.Parse()
+	flags.directory = flag.String("dir", "enron_mail_20110402", "path to email directory")
+	flags.zincURL = flag.String("zincurl", "localhost", "zincsearch host url")
+	flags.port = flag.String("port", "4080", "zincsearch host port")
+	flags.user = flag.String("user", "admin", "zincsearch username")
+	flags.password = flag.String("password", "Complexpass#123", "zincsearch password")
+	flags._index = flag.String("index", "enron", "index name")
+	flags._type = flag.String("type", "_doc", "request payload type")
+	useCustomImpl = flag.Bool("custom", false, "use custom implementation instead of std (net/mail) library")
 
+	flag.Parse()
 }
