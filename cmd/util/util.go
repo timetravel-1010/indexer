@@ -1,6 +1,9 @@
 package util
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 func IndexOf(target string, listOfWords []string) int {
 	i := 0
@@ -32,4 +35,9 @@ func MapStrings(arr []string, f func(string) string) []string {
 		newArr[i] = f(s)
 	}
 	return newArr
+}
+
+// IsEmptyOrWhitespace
+func IsEmptyOrWhitespace(s string) bool {
+	return len(strings.TrimSpace(s)) == 0
 }

@@ -6,6 +6,7 @@ import (
 	"net/mail"
 	"strings"
 
+	"github.com/timetravel-1010/indexer/cmd/util"
 	"github.com/timetravel-1010/indexer/internal/regex"
 )
 
@@ -128,7 +129,11 @@ func (eb *EmailBuilder) SaveLine(line *string, filePath string) {
 	for _, field := range fields {
 		if after, found := strings.CutPrefix(*line, field); found {
 			eb.currentField = field
-			// TODO: pending check if after (lineContent) is "", " ", etc.
+
+			if util.IsEmptyOrWhitespace(after) {
+				return
+			}
+
 			err := eb.setValue(&after, filePath)
 			if err != nil {
 				log.Println("error in SaveLine: ", err)
@@ -229,11 +234,10 @@ func (eb *EmailBuilder) setValue(lineContent *string, filePath string) error {
 		if err != nil {
 			log.Println("error in setterFunc:", eb.currentField, " error:", err)
 		}
+		return nil
 	} else {
 		return fmt.Errorf("no match found for field '%s' in file '%s'", eb.currentField, filePath)
 	}
-
-	return nil
 }
 
 // setAddresses
