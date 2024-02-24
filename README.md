@@ -37,23 +37,76 @@ The structure and corresponding json fields used to parse an email are shown bel
 
 ```go
 type Email struct {
-	MessageID               string   `json:"Message-ID"`
-	Date                    string   `json:"Date"`
-	From                    string   `json:"From"`
-	To                      []string `json:"To"`
-	CC                      []string `json:"CC"`
-	BCC                     []string `json:"BCC"`
-	Subject                 string   `json:"Subject"`
-	MimeVersion             string   `json:"Mime-Version"`
-	ContentType             string   `json:"Content-Type"`
-	ContentTransferEncoding string   `json:"Content-Transfer-Encoding"`
-	XFrom                   string   `json:"X-From"`
-	XTo                     []string `json:"X-To"`
-	Xcc                     []string `json:"X-cc"`
-	Xbcc                    []string `json:"X-bcc"`
-	XFolder                 string   `json:"X-Folder"`
-	XOrigin                 string   `json:"X-Origin"`
-	XFileName               string   `json:"X-FileName"`
-	Body                    string   `json:"Body"`
+	MessageID               string          `json:"Message-Id"`
+	Date                    string          `json:"Date"`
+	From                    string          `json:"From"`
+	To                      []*mail.Address `json:"To"`
+	CC                      []*mail.Address `json:"Cc"`
+	BCC                     []*mail.Address `json:"Bcc"`
+	Subject                 string          `json:"Subject"`
+	MimeVersion             string          `json:"Mime-Version"`
+	ContentType             string          `json:"Content-Type"`
+	ContentTransferEncoding string          `json:"Content-Transfer-Encoding"`
+	XFrom                   string          `json:"X-From"`
+	XTo                     []*mail.Address `json:"X-To"`
+	Xcc                     []*mail.Address `json:"X-Cc"`
+	Xbcc                    []*mail.Address `json:"X-Bcc"`
+	XFolder                 string          `json:"X-Folder"`
+	XOrigin                 string          `json:"X-Origin"`
+	XFileName               string          `json:"X-Filename"`
+	Body                    string          `json:"Body"`
 }
+
+```
+
+## Build from Source
+
+Run the following command 
+
+```
+go build -o indexer .
+```
+
+You can replace `indexer` which your preferred name for the binary.
+
+## Usage
+
+To start indexing run the following command specifying the maildir directory which contains the text emails. 
+
+```
+./indexer 
+```
+
+This way uses the default flag values, as follows:
+
+``` 
+-dir string
+	path to email directory (default "enron_mail_20110402")
+
+-index string
+	index name (default "enron")
+
+-password string
+	zincsearch password (default "Complexpass#123")
+
+-port string
+	zincsearch host port (default "4080")
+
+-user string
+	zincsearch username (default "admin")
+
+-zincurl string
+	zincsearch host url (default "localhost")
+```
+
+So, the default directory is `enron_mail_20110402` which corresponds to [this](http://www.cs.cmu.edu/~enron/enron_mail_20110402.tgz) email database.
+
+Other available flags are: 
+
+```
+-custom
+	use custom implementation instead of std (net/mail) library
+
+-type string
+	request payload type (default "_doc")
 ```
