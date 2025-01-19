@@ -72,7 +72,6 @@ func Upload(re HttpRequest, payload *bytes.Buffer) error {
 }
 
 func getBodyResponse(resp *http.Response) (string, error) {
-
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
