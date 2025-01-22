@@ -1,6 +1,6 @@
 # Indexer
 
-CLI tool to index emails in txt format (see example below) in the search engine [ZincSearch](https://zincsearch-docs.zinc.dev).
+CLI tool to index emails in text format (see example below) in the search engine [ZincSearch](https://zincsearch-docs.zinc.dev).
 
 
 ## Email Format
@@ -59,6 +59,33 @@ type Email struct {
 
 ```
 
+## Setting up ZincSearch
+
+First create a data folder to store the zincsearch data 
+
+```bash
+mkdir data 
+```
+
+Now grant the corresponding permissions to the data folder
+
+```bash
+chmod -R a+rwx data
+```
+
+You can use the command to run ZincSearch in a docker container using the [official image](https://zincsearch-docs.zinc.dev/installation/).
+
+```bash
+docker run -v ./data:/data \
+-e ZINC_DATA_PATH="/data" \
+-p 4080:4080 \
+-e ZINC_FIRST_ADMIN_USER=admin \
+-e ZINC_FIRST_ADMIN_PASSWORD=Complexpass#123 \
+--name zincsearch public.ecr.aws/zinclabs/zincsearch:latest
+```
+
+That's it! Now you should have ZincSearch running on the port 4080, check in http://localhost:4080.
+
 ## Build from Source
 
 Run the following command 
@@ -74,7 +101,7 @@ You can replace `indexer` which your preferred name for the binary.
 To start indexing run the following command specifying the maildir directory which contains the text emails. 
 
 ```
-./indexer 
+./indexer  -dir <folder name>
 ```
 
 This way uses the default flag values, as follows:
