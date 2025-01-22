@@ -3,34 +3,29 @@ import SearchBar from './SearchBar.vue';
 import type { Email } from '../models/Email';
 
 const props = defineProps<{
-    emails?: Email[]
-}>()
+  emails?: Email[]
+}>();
 
 defineEmits(['onSearch']);
-
 </script>
 
-
 <template>
-    <div class="main-header flex h-20 font-poppins font-bold items-center p-5">
-        <img src="../assets/mail-box.png" alt="mailbox-icon" class="ml-10" width="4%">
-        <h1 class="text-4xl ml-4">
+  <header class="bg-[#11009E] text-white">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 p-4 sm:p-6">
+        <!-- Logo Section -->
+        <div class="flex items-center gap-3 sm:gap-4">
+          <img src="../assets/mail-box.png" alt="ZincMail logo" class="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+          <h1 class="text-2xl sm:text-3xl lg:text-4xl font-semibold">
             ZincMail
-        </h1>
-        <SearchBar :emails=props.emails />
+          </h1>
+        </div>
+
+        <!-- Search Section -->
+        <div class="w-full sm:flex-1 max-w-2xl">
+          <SearchBar :emails="emails" />
+        </div>
+      </div>
     </div>
+  </header>
 </template>
-
-
-<style>
-.main-header {
-    background-color: #11009E;
-    color: white;
-}
-
-.center-vertically {
-    position: relative;
-    top: 50%;
-    transform: translateY(-50%);
-}
-</style>

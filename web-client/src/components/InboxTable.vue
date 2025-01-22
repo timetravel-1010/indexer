@@ -1,107 +1,72 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue';
+import type { Email } from '../models/Email';
+import InboxTable from './InboxTable.vue';
+import ContentPane from './ContentPane.vue';
+import type { EmailResponse } from '../models/EmailResponse';
+import type { Hit } from '../models/Hit';
 
-import type { Hit } from '@/models/Hit';
-import type { EmailAddress } from '@/models/Address';
+const emails = ref<Hit[]>([]);
+const isLoading = ref(false); // Loading state
+const contentPane = ref();
+const error = ref<string | null>(null); // Error message
 
-const props = defineProps<{
-    emails: Hit[];
-}>()
+const onDisplayEmail = (e: Email) => {
+  contentPane.value.displayEmail(e);
+};
 
+const searchEmails = (term: string) => {
+  isLoading.value = true; // Start loading
+  error.value = null; // Reset error
+  let url = new URL('http://localhost:8080/emails/search?index=custom&page=10');
+  url.searchParams.append('term', term);
+  fetch(url, {
+    method: 'GET',
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data: EmailResponse) => {
+      emails.value = data.hits.hits;
+      console.log('data: ', data.hits);
+    })
+    .catch((error) => {
+      console.error('Error: ', error);
+      error.value = 'Failed to load emails. Please try again.';
+    })
+    .finally(() => {
+      isLoading.value = false; // Stop loading
+    });
+};
 
+const hasEmails = computed(() => emails.value.length > 0);
 
-const showTo = (to: EmailAddress[]): string => {
-
-    if (to === undefined || to === null || to?.length === 0) {
-        return 'N/A';
-    } else if (to?.length === 1) {
-        return to[0].Address;
-    }
-    return to[0].Address + ', ...';
-}
-
-
+defineExpose({
+  searchEmails,
+});
 </script>
 
 <template>
-    <div class="overflow-y-auto overflow-hidden w-full h-full">
-        <div class="px-4 py-2 flex items-center justify-between border-l border-r border-b">
-            Results
-        </div>
-        <div class="pt-3 pb-4 h-4/5">
-            <div class="p-6 overflow-scroll px-0 h-full">
-                <table class="mt-4 w-full min-w-max table-auto text-left">
-                    <thead>
-                        <tr>
-                            <th
-                                class="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4 transition-colors hover:bg-blue-gray-50">
-                                <p
-                                    class="antialiased font-sans text-sm text-blue-gray-900 flex items-center justify-between gap-2 font-normal leading-none opacity-70">
-                                    From
-                                </p>
-                            </th>
-                            <th
-                                class="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4 transition-colors hover:bg-blue-gray-50">
-                                <p
-                                    class="antialiased font-sans text-sm text-blue-gray-900 flex items-center justify-between gap-2 font-normal leading-none opacity-70">
-                                    To </p>
-                            </th>
-                            <th
-                                class="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4 transition-colors hover:bg-blue-gray-50">
-                                <p
-                                    class="antialiased font-sans text-sm text-blue-gray-900 flex items-center justify-between gap-2 font-normal leading-none opacity-70">
-                                    Subject
-                                </p>
-                            </th>
-                            <th
-                                class="border-y border-blue-gray-100 bg-blue-gray-50/50 p-4 transition-colors hover:bg-blue-gray-50">
-                                <p
-                                    class="antialiased font-sans text-sm text-blue-gray-900 flex items-center justify-between gap-2 font-normal leading-none opacity-70">
-                                    Date
-                                </p>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr @click="$emit('onSelect', email)" v-for="email in props.emails" :key="email._id"
-                            class="cursor-pointer hover:bg-gray-200 ">
-                            <td class="p-4 border-b border-blue-gray-50">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex flex-col">
-                                        <p
-                                            class="block antialiased font-sans text-sm leading-normal text-blue-gray-900 font-normal">
-                                            {{ email._source.email["From"] }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="p-4 border-b border-blue-gray-50">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex flex-col">
-                                        <p
-                                            class="block antialiased font-sans text-sm leading-normal text-blue-gray-900 font-normal">
-                                            {{ showTo(email._source.email["To"]) }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="p-4 border-b border-blue-gray-50">
-                                <div class="flex flex-col">
-                                    <p
-                                        class="block antialiased font-sans text-sm leading-normal text-blue-gray-900 font-normal">
-                                        {{ email._source.email["Subject"] }}
-                                    </p>
-                                </div>
-                            </td>
-                            <td class="p-4 border-b border-blue-gray-50">
-                                <p
-                                    class="block antialiased font-sans text-sm leading-normal text-blue-gray-900 font-normal">
-                                    {{ email._source.email["Date"] }}
-                                </p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+  <div class="flex flex-col lg:flex-row w-full h-full">
+    <!-- Left Pane: Inbox Table -->
+    <div class="flex flex-col w-full lg:w-1/2 p-4 space-y-4 overflow-y-auto">
+      <div v-if="error" class="text-red-500">
+        {{ error }}
+      </div>
+      <InboxTable v-if="hasEmails" @on-select="onDisplayEmail" :emails="emails" />
+      <p v-else class="text-gray-500">No emails found.</p>
+      <button class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded" @click="searchEmails('')"
+        :disabled="isLoading">
+        {{ isLoading ? "Loading..." : "Load More" }}
+      </button>
     </div>
+
+    <!-- Right Pane: Content Pane -->
+    <div class="flex-1 p-4 overflow-y-auto">
+      <ContentPane ref="contentPane" />
+    </div>
+  </div>
 </template>
