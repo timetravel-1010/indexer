@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/timetravel-1010/indexer/internal/email"
+	"github.com/timetravel-1010/indexer/indexer/internal/email"
 )
 
 // A Document contains the path of the email and the email itself.

@@ -6,8 +6,8 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/timetravel-1010/indexer/cmd/util"
-	"github.com/timetravel-1010/indexer/internal/regex"
+	"github.com/timetravel-1010/indexer/indexer/cmd/util"
+	"github.com/timetravel-1010/indexer/indexer/internal/regex"
 )
 
 var (

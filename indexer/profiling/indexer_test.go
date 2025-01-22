@@ -3,8 +3,8 @@ package main
 import (
 	"testing"
 
-	"github.com/timetravel-1010/indexer/cmd/program"
-	"github.com/timetravel-1010/indexer/internal/parser"
+	"github.com/timetravel-1010/indexer/indexer/cmd/program"
+	"github.com/timetravel-1010/indexer/indexer/internal/parser"
 )
 
 var (

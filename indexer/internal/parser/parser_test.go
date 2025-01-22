@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/timetravel-1010/indexer/cmd/util"
-	"github.com/timetravel-1010/indexer/internal/email"
+	"github.com/timetravel-1010/indexer/indexer/cmd/util"
+	"github.com/timetravel-1010/indexer/indexer/internal/email"
 )
 
 func TestCheckEmptyEmail(t *testing.T) {

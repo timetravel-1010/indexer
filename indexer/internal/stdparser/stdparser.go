@@ -8,7 +8,7 @@ import (
 	"net/mail"
 	"os"
 
-	"github.com/timetravel-1010/indexer/internal/email"
+	"github.com/timetravel-1010/indexer/indexer/internal/email"
 )
 
 var listField map[string]bool = map[string]bool{
