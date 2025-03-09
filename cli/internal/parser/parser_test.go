@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/timetravel-1010/indexer/cmd/util"
-	"github.com/timetravel-1010/indexer/internal/email"
+	"github.com/timetravel-1010/indexer/cli/cmd/util"
+	"github.com/timetravel-1010/indexer/cli/internal/email"
 )
 
 func TestCheckEmptyEmail(t *testing.T) {
@@ -43,7 +43,7 @@ func TestParseFullBody(t *testing.T) {
 
 func Test26(t *testing.T) {
 	p := Parser{}
-	fileName := "../../samples/26."
+	fileName := "../../samples/26.txt"
 
 	expectedEmail := email.Email{
 		MessageID:               "<15164543.1075855378954.JavaMail.evans@thyme>",

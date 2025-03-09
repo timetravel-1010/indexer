@@ -47,7 +47,7 @@ func TestParseFullBody(t *testing.T) {
 
 func Test26(t *testing.T) {
 	p := StdParser{}
-	fileName := "../../samples/26."
+	fileName := "../../samples/26.txt"
 
 	exMessageID := "<15164543.1075855378954.JavaMail.evans@thyme>"
 	exDate := "Wed, 25 Apr 2001 16:52:00 -0700 (PDT)"
