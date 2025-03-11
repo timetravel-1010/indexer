@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/timetravel-1010/indexer-api/internal/models"
+	"github.com/timetravel-1010/indexer/api/internal/models"
 )
 
 // Config

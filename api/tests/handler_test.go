@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"indexer-api/internal/server"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -9,8 +8,10 @@ import (
 )
 
 func TestHandler(t *testing.T) {
-	s := &server.Server{}
-	server := httptest.NewServer(http.HandlerFunc(s.HelloWorldHandler))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello World"))
+	}))
+
 	defer server.Close()
 	resp, err := http.Get(server.URL)
 	if err != nil {

@@ -1,12 +1,12 @@
 package server
 
 import (
-	"github.com/timetravel-1010/indexer-api/internal/handlers"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/timetravel-1010/indexer/api/internal/handlers"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
